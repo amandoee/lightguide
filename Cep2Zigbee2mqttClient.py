@@ -188,6 +188,7 @@ class Cep2Zigbee2mqttClient:
             'timestamp': "2024-04-05 11:11:29"
 
         }
+        
         self.__client.publish(topic=f"cep2/request/store_event",
                               payload=json.dumps(json_data))
     
