@@ -32,8 +32,6 @@ class room:
         self.backwardRoom:room
 
 
-    
-
 class Event:
     eventtype : str
     sourceid : str
