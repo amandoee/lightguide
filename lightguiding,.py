@@ -12,19 +12,38 @@ class Light:
     lightID: str
     status : bool
 
-    def turn_on(self):
+    def turn_on(self,placement):
+        #Color is dependent on the room being next or current.
+        if placement=="current":
+            #Turn current room color
+            pass
+        else:
+            #Turn next room color
+            pass
+
+        pass
+
+    def turn_off(self):
         pass
 
 class Sensor:
     sensorID: str
     status : bool 
 
+class roomType(Enum):
+    HALL = 0
+    BATHROOM = 1
+    BEDROOM = 2
+
+
+
 class room:
-    roomID: str
+    roomID: roomType
     forwardRoom: None
     backwardRoom: None
     light : Light
     sensor: Sensor
+    isCurrent : bool = False
 
     def __init__(self,roomID) -> None:
         self.roomID = roomID
@@ -44,16 +63,23 @@ class Event:
 
 def initRooms():
     #hardcoded
-    bedroom = room("bedroom")
-    kitchen = room("kitchen")
-    bathroom = room("bathroom")
-    kitchen.backwardRoom = bedroom
-    kitchen.forwardRoom = bathroom
-    bedroom.forwardRoom = kitchen
-    bedroom.backwardRoom = bedroom
-    bathroom.backwardRoom = kitchen
-    bathroom.forwardRoom = bathroom
-    rooms = {"bedroom":bedroom, "kitchen":kitchen, "bathroom":bathroom}
+    bedroom = room(2)
+    kitchen = room(0)
+    living_room = room(0)
+    guest_room = room(0)
+    bathroom = room(1)
+
+    bedroom.isCurrent=True
+    bedroom.forwardRoom= living_room
+    living_room.backwardRoom=bedroom
+    living_room.forwardRoom=kitchen
+    kitchen.backwardRoom=living_room
+    kitchen.forwardRoom=guest_room
+    guest_room.backwardRoom=kitchen
+    guest_room=bathroom
+    bathroom.backwardRoom=guest_room
+    
+    rooms = {"bedroom":bedroom, "kitchen":kitchen, "bathroom":bathroom, "living_room":living_room,"guest_room":guest_room}
 
     return rooms
 
@@ -76,6 +102,21 @@ class EventHandler:
         #check if event is deactivate/active or error
 
 
+
+        now = time.time()
+        #Check if timer is over threshold. Depending on room, do something
+        if (self.lasttimerecorded - now > 10*60):
+            #
+
+
+
+            pass
+
+
+        self.lasttimerecorded = now
+
+
+
         if (self.state == States.IDLE):
             if(Event.sourceid == "bedroom"):
                 #activate system
@@ -83,38 +124,42 @@ class EventHandler:
                 self.current_room.roomID = self.rooms.get("bedroom")
                 pass
 
+
+
         if (self.state == States.FORWARD):
-            if self.current_room.roomID == "WC":
+            if self.current_room.roomID == "bathroom":
                 self.state = States.BACKWARD
             else:
 
-                if (self.current_room.roomID == event.sourceid):
-                    #increment timer
-                    now = time.time()
-                    timer += (now - self.lasttimerecorded)
-                    self.lasttimerecorded = now
-                    if (timer > 10*60):
-                        self.state = States.FAILERE
-
-
                 # possibly advance room
                 if event.sourceid == self.current_room.forwardRoom.sensor.sensorID:
+                    self.current_room.light.turn_off()
                     self.current_room = self.current_room.forwardRoom
                 
-                self.current_room.light.turn_on()
-                self.current_room.forwardRoom.light.turn_on()
+                self.current_room.light.turn_on("current")
+                self.current_room.forwardRoom.light.turn_on("next")
 
         if (self.state == States.BACKWARD):
             #check for arrival in bedroom
             if self.current_room.roomID == "BEDROOM":
-                self.state = States.IDLE
+                #User has arrived back in bed succesfully. Start timer for setting idle. Timer can be overwritten by new signal
+                #increment timer
+                now = time.time()
+                timer += (now - self.lasttimerecorded)
+                self.lasttimerecorded = now
+                if (timer > 10*60):
+                    self.state = States.IDLE
+                
             else:
                 #check if source id from event is the expected
-                self.current_room.light.turn_on()
-                self.current_room.backwardRoom.light.turn_on()
+                self.current_room.light.turn_on("current")
+                self.current_room.backwardRoom.light.turn_on("next")
                 self.current_room = self.current_room.backwardRoom
         
         if (self.state == States.TIMEOUT):
+            #Handle case where user has not moved. Depends on current room.
+
+
             pass
         
         if (self.state == States.FAILERE):
