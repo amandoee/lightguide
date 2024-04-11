@@ -10,76 +10,26 @@ from typing import Any, Dict, List, Union
 from mysql.connector import (connect as mysql_connect,
                              errorcode as mysql_errorcode,
                              Error as MySqlError)
-from paho.mqtt.client import Client as MqttClient, MQTTMessage
-from paho.mqtt import publish
-
+#from paho.mqtt.client import Client as MqttClient, MQTTMessage
+#from paho.mqtt import publish
 
 @dataclass
-class Cep2EvemanEvent:
+class LogEntry:
     """ Sensor events to be stored in the database. """
-
     device_id: str
     device_type: str
-    measurement: Any
-    timestamp: datetime
+    measurement: str
+    timestamp: datetime #"timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    loglevel : str
 
-    def to_json(self) -> str:
-        """ Create a JSON representation of the event.
+    def __init__(self, device_id: str, device_type: str, measurement: str, timestamp:datetime,loglevel:str) -> None:
+        self.device_id = device_id
+        self.device_type = device_type
+        self.measurement = measurement
+        self.timestamp = timestamp
+        self.loglevel = loglevel
 
-        Returns:
-            str: a JSON string.
-        """
-        return json.dumps({
-            "device_id": self.device_id,
-            "device_type": self.device_type,
-            "measurement": self.measurement,
-            "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        })
-
-    @classmethod
-    def from_json(cls, event: Union[str, Dict[str, Any]]) -> Cep2EvemanEvent:
-        """ Instantiate a Cep2Event from a JSON string.
-
-        Args:
-            event (Union[str, Dict[str, Any]]): the JSON object as a string or as a dict.
-
-        Returns:
-            Cep2Event: object instantiated fro mthe JSON object.
-
-        Raises:
-            KeyError: if one of the object attributes is not found.
-        """
-        json_obj = json.loads(event) if isinstance(event, str) else event
-
-        return cls(device_id=json_obj["device_id"],
-                   device_type=json_obj["device_type"],
-                   measurement=json_obj["measurement"],
-                   timestamp=datetime.strptime(json_obj["timestamp"], "%Y-%m-%d %H:%M:%S"))
-
-
-class Cep2EvemanModel:
-    """ Model to store sensor events into a MySQL database. """
-    # IMPORTANT: this is a very simplistic example of a database, so the exmaple is easier to
-    # understand. By no means this is a right approach for this database.
-    # The first limitation of this database is the lack of a device table, which makes the database
-    # not conform with the 2nd normal form (2NF), i.e. there should be a devices table that has
-    # multiple events.
-    # The second limitation is the generalization of data contained in the measurement column.
-    # Relational databases (at least MySQL and SQLite) don't have a generic type for columns, thus
-    # this approach is a workaraound for a generic storage in a single column. A better approach
-    # would be an event table that holds the common event data, such as timestamp, that then is
-    # related with a device table and tables for specific events (for example, occupancy or power
-    # plug events).
-    TABLES = {
-        "events": ("CREATE TABLE `events` ("
-                   "  `id` int(11) NOT NULL AUTO_INCREMENT,"
-                   "  `device_id` varchar(30) NOT NULL,"
-                   "  `device_type` varchar(30) NOT NULL,"
-                   "  `measurement` varchar(30) NOT NULL,"
-                   "  `timestamp` timestamp NOT NULL,"
-                   "  PRIMARY KEY (`id`)"
-                   ") ENGINE=InnoDB")
-    }
+class DB:
 
     def __init__(self, host, database: str, user: str, password: str) -> None:
         self.__database = database
@@ -87,6 +37,7 @@ class Cep2EvemanModel:
         self.__mysql_connection = None
         self.__user = user
         self.__password = password
+
 
     def connect(self):
         """ Connect to database given in the initializer. The connection is left open and must be
@@ -104,6 +55,8 @@ class Cep2EvemanModel:
             # Select the database given in the initalizer. If it fails, an exception is raised, that
             # can be used to create the database.
             self.__mysql_connection.cursor().execute(f"USE {self.__database}")
+            print("succes")
+
         except MySqlError as err:
             # If the database doesn't exist, then create it.
             if err.errno == mysql_errorcode.ER_BAD_DB_ERROR:
@@ -114,104 +67,34 @@ class Cep2EvemanModel:
             else:
                 print(f"Database error = {err}")
 
+
     def disconnect(self):
         """ Disconnect from the database.
         """
         self.__mysql_connection.close()
         self.__mysql_connection = None
 
-    def get_events(self, device_id: str = None) -> List[Cep2EvemanEvent]:
-        """ Gets the full list of events. If the device_id argument is givem then only the events
-        for the device are returned.
 
-        Args:
-            device_id (str): device_id to filter the device's events
-
-        Raises:
-            RuntimeError: a connection to the database was not established.
-
-        Returns:
-            List[Cep2Event]: list of events
-        """
-
-        # A connection to the database was not established. Then, stop.
+    def InsertLog(self, log: LogEntry) -> None:
         if not self.__mysql_connection:
             raise RuntimeError(f"Not connected to database {self.__database}.")
 
-        query = ("SELECT device_id, device_type, measurement, timestamp FROM events;"
-                 if not device_id else
-                 f'SELECT device_id, device_type, measurement, timestamp FROM events WHERE device_id = "{device_id}";')
-        cursor = self.__mysql_connection.cursor()
-        events = []
-
-        # Execute the SELECT query.
-        cursor.execute(query)
-
-        # Parse all the results from the query. The measurements are stored in the database as
-        # strings. When parsing them, convert to the correct type.
-        for (device_id, device_type, measurement, timestamp) in cursor:
-            if measurement.isdigit():
-                casted_measurement = int(measurement)
-            elif measurement.lower() in ("true", "false"):
-                casted_measurement = bool(strtobool(measurement))
-            else:
-                casted_measurement = measurement
-
-            events.append(Cep2EvemanEvent(device_id=device_id,
-                                          device_type=device_type,
-                                          measurement=casted_measurement,
-                                          timestamp=timestamp))
-
-        return events
-
-    def store(self, event: Cep2EvemanEvent) -> None:
-        if not self.__mysql_connection:
-            raise RuntimeError(f"Not connected to database {self.__database}.")
-
-        query = ("INSERT INTO events (device_id,device_type,measurement,timestamp)"
-                 "VALUES(%s, %s, %s, %s);")
+        # timestamp - loglevel message
+        query = ("INSERT INTO EVENT (timestamp,loglevel,message)"
+                 "VALUES(%s, %s, %s);")
         cursor = self.__mysql_connection.cursor()
 
         # If the value is a boolean, then convert it to a string in the format "true" or "false".
         # Other value types will be automatically converted to a string, once the query is executed.
-        measurement = (str(event.measurement).lower()
-                       if isinstance(event.measurement, bool)
-                       else event.measurement)
 
-        cursor.execute(query,
-                       (event.device_id, event.device_type, measurement, event.timestamp))
+        message = log.device_id + " " + log.device_type + " " + log.measurement
+        cursor.execute(query, (log.timestamp.strftime("%Y-%m-%d %H:%M:%S"), log.loglevel, message))
         self.__mysql_connection.commit()
 
         cursor.close()
 
-    def __create_database(self):
-        cursor = self.__mysql_connection.cursor()
 
-        try:
-            cursor.execute(f"CREATE DATABASE {self.__database} DEFAULT CHARACTER SET 'utf8'")
-        except MySqlError as err:
-            print(f"Failed creating database: {err}")
-        else:
-            cursor.execute(f"USE {self.__database}")
-
-            for table_name in self.TABLES:
-                table_description = self.TABLES[table_name]
-
-                try:
-                    print(f"Creating table {table_name}: ", end="")
-                    cursor.execute(table_description)
-                except MySqlError as err:
-                    if err.errno == mysql_errorcode.ER_TABLE_EXISTS_ERROR:
-                        print(f"Table {table_name} already exists.")
-                    else:
-                        print(err.msg)
-                else:
-                    print("OK")
-
-        cursor.close()
-        self.__mysql_connection.database = self.__database
-
-
+#for future use
 class Cep2EvemanController:
     """ Listen for MQTT messages that contain sensor events and store them into the model. """
 
@@ -325,7 +208,11 @@ class Cep2EvemanController:
                     try:
                         event = Cep2EvemanEvent.from_json(message.payload.decode("utf-8"))
                         print(f"Storing event {event}")
+
+                        #her blir den gemt i db
                         self.__model.store(event)
+
+
                     except KeyError:
                         print(f"Malformed JSON event: {message}")
                 elif message.topic == self.GET_EVENTS_REQUEST_TOPIC:
@@ -353,36 +240,49 @@ class Cep2EvemanController:
                                    payload=json.dumps(events))
 
 
-def main():
-    stop_daemon = Event()
 
-    def shutdown(signal, frame):
-        stop_daemon.set()
+def main():
+    #stop_daemon = Event()
+
+    #def shutdown(signal, frame):
+    #    stop_daemon.set()
 
     # Subscribe to signals sent from the terminal, so that the application is shutdown properly.
     # When one of the trapped signals is captured, the function shutdown() will be execute. This
     # will set the stop_daemon event that will then stop the loop that keeps the application running.
-    signal.signal(signal.SIGHUP, shutdown)
-    signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
+    #signal.signal(signal.SIGHUP, shutdown)
+    #signal.signal(signal.SIGINT, shutdown)
+    #signal.signal(signal.SIGTERM, shutdown)
 
     # Instantiate the model to connect to a database running in the same machine (localhost).
-    model = Cep2EvemanModel(host="localhost",
-                            database="cep2",
-                            user="cep2",
-                            password="cep2")
+    model = DB(host="192.168.129.97",
+                            database="group1lightguide",
+                            user="sodeChristian",
+                            password="1234")
     # The controller will connect to a MQTT broker running in the same machine.
-    controller = Cep2EvemanController(model=model,
-                                      mqtt_host="localhost")
+    #controller = Cep2EvemanController(model=model,
+    #                                  mqtt_host="localhost")
 
-    controller.start_listening()
-
-    while not stop_daemon.is_set():
+    #controller.start_listening()
+    #while not stop_daemon.is_set():
         # The event times out evey 60 seconds, or when the event is set. If it is set, then the loop
         # will stop and the application will exit.
-        stop_daemon.wait(60)
+    #    stop_daemon.wait(60)
 
-    controller.stop_listening()
+    #controller.stop_listening()
+
+    log = LogEntry(
+        device_id = "nummer1",
+        loglevel = "Info",
+        timestamp = datetime.now(),
+        measurement = "something",
+        device_type="lys"
+    )
+    
+
+    model.connect()
+    model.InsertLog(log=log)
+    model.disconnect()
 
 
 if __name__ == "__main__":
