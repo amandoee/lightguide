@@ -146,23 +146,22 @@ class EventHandler:
                 if (self.current_room.typeroom==roomType.BATHROOM):
                     X=SystemSettings.bathroom_timeout*60
                 elif (self.current_room==roomType.BEDROOM):
-                    X=99999999999
+                    X=3
                 else:
                     X=SystemSettings.default_timeout
 
 
                 if (time.time() > self.lasttimerecorded + X):
                     #Create timeout event
-                    timoutEvent = lightEvent(EventType.TIMEOUT_EVENT)
-                    
+                    print("Timeout")
                     
                     log = CE.LogEntry(
-                        device_id = self.current_room.sensor.sensorID,
-                        loglevel = "Informational",
+                        device_id = str(self.current_room.typeroom.name),
+                        loglevel = "warning",
                         timestamp = datetime.datetime.now(),
-                        measurement = str(datetime.datetime.now()-self.lasttimerecorded),
+                        measurement = str(time.time()-self.lasttimerecorded),
                         device_type="sensor",
-                        type_= "Movement"
+                        type_= "Timeout"
                     )
                     
                     self.model.InsertLog(log=log)
@@ -170,7 +169,6 @@ class EventHandler:
                     #self.state=States.TIMEOUT
                     self.timeout=True
                     
-                    return  timoutEvent# or raise TimeoutException()
 
 
 
