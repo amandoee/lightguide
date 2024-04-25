@@ -21,14 +21,16 @@ if __name__ == "__main__":
     #controller = Cep2Controller(devices_model)
     #controller.start()
 
-
     handler = lg.EventHandler()
 
     sleep(4)
 
+
     wakeywakey = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
+
     handler.handleEvent(wakeywakey)
-    
+    print("test")
+
     sleep(3)
     
     Movedto2 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))

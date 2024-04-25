@@ -202,8 +202,8 @@ class EventHandler:
                                         database="group1lightguide",
                                         user="sodeChristian",
                                         password="1234")
-        self.model.connect()
-        SystemSettings = self.model.getSettings()
+        #self.model.connect()
+        #SystemSettings = self.model.getSettings()
         
         
                     
