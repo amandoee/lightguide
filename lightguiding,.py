@@ -1,12 +1,17 @@
 import time
 from enum import Enum
+import threading
+
+
+
 #enum states
 class States(Enum):
     IDLE = 1
     FORWARD = 2
     BACKWARD = 3
     TIMEOUT = 4
-    FAILERE = 5
+    FAILURE = 5
+    UNACTIVE = 6
 
 class Light:
     lightID: str
@@ -38,7 +43,7 @@ class roomType(Enum):
 
 
 class room:
-    roomID: roomType
+    roomType: roomType
     forwardRoom: None
     backwardRoom: None
     light : Light
@@ -50,16 +55,20 @@ class room:
         self.forwardRoom:room
         self.backwardRoom:room
 
+class EventType(Enum):
+    TIMEOUT_EVENT=0
+    MOVEMENT=1
+    FAILURE_EVENT=2
+    BUTTON_PRESS=3
+
 
 class Event:
-    eventtype : str
-    sourceid : str
-    message : str
+    eventtype : EventType
+    Room : room
 
-    def __init__(self, EventType:str, sourceID:str, msg:str) -> None:
+    def __init__(self, EventType:EventType, Room:room) -> None:
         self.eventtype = EventType
-        self.sourceid = sourceID
-        self.message = msg
+        self.room = Room
 
 def initRooms():
     #hardcoded
@@ -69,6 +78,7 @@ def initRooms():
     guest_room = room(0)
     bathroom = room(1)
 
+    #Map
     bedroom.isCurrent=True
     bedroom.forwardRoom= living_room
     living_room.backwardRoom=bedroom
@@ -85,36 +95,52 @@ def initRooms():
 
 
 class EventHandler:
-    #hardcoded lst of rooms
+
     rooms : dict
     state : States
     current_room : room
     timer : int
     lasttimerecorded : float
 
+    #Define thread for class
+
+    def timeoutCounter(self,eventtype : Event):
+        if (eventtype.room.roomType=="bathroom"):
+            X=600 #TODO: Determine bathroom normal time etc.
+        else:
+            X=60
+     
+        while True:
+
+            if (self.state==States.IDLE or self.state==States.FAILURE or self.state==States.TIMEOUT):
+                pass
+            
+            else:
+
+                if (time.time() > self.lasttimerecorded + X):
+                    #Create timeout event
+                    timoutEvent = Event(EventType.TIMEOUT_EVENT,eventtype.room)
+                    return  timoutEvent# or raise TimeoutException()
+            print("a") # do whatever you need to do
+
+
+    timeoutThread = threading.Thread(target=timeoutCounter(Event()))
+
     def __init__(self) -> None:
         self.state = States.IDLE
         self.rooms = initRooms()
         self.timer = 0
         self.lasttimerecorded = time.time()
+        #Start timeout thread
+        self.timeoutThread.start()
+
     
     def handleEvent(self, event : Event):
         #check if event is deactivate/active or error
 
 
-
         now = time.time()
-        #Check if timer is over threshold. Depending on room, do something
-        if (self.lasttimerecorded - now > 10*60):
-            #
-
-
-
-            pass
-
-
         self.lasttimerecorded = now
-
 
 
         if (self.state == States.IDLE):
@@ -157,15 +183,20 @@ class EventHandler:
                 self.current_room = self.current_room.backwardRoom
         
         if (self.state == States.TIMEOUT):
-            #Handle case where user has not moved. Depends on current room.
+            #TODO Handle case where user has not moved. Depends on current room.
 
 
             pass
         
-        if (self.state == States.FAILERE):
+        if (self.state == States.FAILURE):
+            #TODO hanfle failure
             pass
         
+        if (self.state == States.UNACTIVE):
+            pass
+
+
         else:
-            #report unexpected shit
+            #TODO report unexpected shit
             pass
 
