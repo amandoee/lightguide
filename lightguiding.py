@@ -1,6 +1,8 @@
+import datetime
 import time
 from enum import Enum
 import threading
+import Cep2Eveman as CE
 
 
 
@@ -109,39 +111,84 @@ class EventHandler:
     current_room : room
     timer : int
     lasttimerecorded : float
+    model : CE.DB
+    timeout : bool
 
     #Define thread for class
 
-    def timeoutCounter(self,eventtype : lightEvent):
-        if (eventtype.place.typeroom=="bathroom"):
-            X=600 #TODO: Determine bathroom normal time etc.
-        else:
-            X=60
+    def timeoutCounter(self):
+        
+        
+        #Connect to db
+        self.model = CE.DB(host="192.168.32.97",
+                                        database="group1lightguide",
+                                        user="sodeChristian",
+                                        password="1234")
+        self.model.connect()
+        SystemSettings = self.model.getSettings()
+        
+        #timeout in seconds
+        X=SystemSettings.bathroom_timeout*60
      
         while True:
+            
+            #if (time.time() > self.lasttimerecorded + X):
+                #self.state=States.TIMEOUT
 
-            if (self.state==States.IDLE or self.state==States.FAILURE or self.state==States.TIMEOUT or eventtype.type==EventType.INIT):
+            if (self.state==States.IDLE or self.state==States.FAILURE):
+                
                 continue
             
-            else:
+               
+            
+            elif (self.timeout == False):
+                
+                if (self.current_room.typeroom==roomType.BATHROOM):
+                    X=SystemSettings.bathroom_timeout*60
+                elif (self.current_room==roomType.BEDROOM):
+                    X=99999999999
+                else:
+                    X=SystemSettings.default_timeout
+
 
                 if (time.time() > self.lasttimerecorded + X):
                     #Create timeout event
-                    timoutEvent = lightEvent(EventType.TIMEOUT_EVENT,eventtype.place)
+                    timoutEvent = lightEvent(EventType.TIMEOUT_EVENT)
+                    
+                    
+                    log = CE.LogEntry(
+                        device_id = self.current_room.sensor.sensorID,
+                        loglevel = "Informational",
+                        timestamp = datetime.datetime.now(),
+                        measurement = str(datetime.datetime.now()-self.lasttimerecorded),
+                        device_type="sensor",
+                        type_= "Movement"
+                    )
+                    
+                    self.model.InsertLog(log=log)
+
+                    #self.state=States.TIMEOUT
+                    self.timeout=True
+                    
                     return  timoutEvent# or raise TimeoutException()
-            print("a") # do whatever you need to do
 
 
 
 
     def __init__(self) -> None:
-        timeoutThread = threading.Thread(target=self.timeoutCounter, args=[lightEvent(type=EventType.INIT,place=room(roomType.BATHROOM))])
+        timeoutThread = threading.Thread(target=self.timeoutCounter)
         self.state = States.IDLE
         self.rooms = initRooms()
         self.timer = 0
         self.lasttimerecorded = time.time()
         #Start timeout thread
         timeoutThread.start()
+        self.timeout=False
+        
+        
+        
+        
+        
 
     
     def handleEvent(self, event : lightEvent):
@@ -150,7 +197,18 @@ class EventHandler:
 
         now = time.time()
         self.lasttimerecorded = now
+        self.timeout=False
+        #self.current_room = self.rooms.get(event.place.typeroom)
 
+        self.model = CE.DB(host="192.168.32.97",
+                                        database="group1lightguide",
+                                        user="sodeChristian",
+                                        password="1234")
+        self.model.connect()
+        SystemSettings = self.model.getSettings()
+        
+        
+                    
 
         if (self.state == States.IDLE):
             print("here")
@@ -178,6 +236,19 @@ class EventHandler:
                     print("Moved to next room. Turning off old room light")
                     #self.current_room.light.turn_off()
                     self.current_room = self.rooms.get(event.place.typeroom)
+                    log = CE.LogEntry(
+                        device_id = str(self.current_room.typeroom.name),
+                        loglevel = "Informational",
+                        timestamp = datetime.datetime.now(),
+                        measurement = str(time.time()-self.lasttimerecorded),
+                        device_type="sensor",
+                        type_= "movement"
+                    )
+                    self.model.InsertLog(log=log)
+
+                    
+                    
+                    
                 else:
                     print("UNEXPECTED ROOM HANDLE PLEASE")
                     #Logic for unexpected spawn/teleports
@@ -210,6 +281,15 @@ class EventHandler:
                 if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:
                     print("Moved to previous room. Turning off old room light")
                     self.current_room = self.rooms.get(event.place.typeroom)
+                    log = CE.LogEntry(
+                        device_id = str(self.current_room.typeroom.name),
+                        loglevel = "Informational",
+                        timestamp = datetime.datetime.now(),
+                        measurement = str(time.time()-self.lasttimerecorded),
+                        device_type="sensor",
+                        type_= "movement"
+                    )
+                    self.model.InsertLog(log=log)
                 
                 else:
                     print("UNEXPECTED ROOM HANDLE PLEASE")
@@ -217,11 +297,7 @@ class EventHandler:
                 
                 print("Init new current room")
         
-        if (self.state == States.TIMEOUT):
-            #TODO Handle case where user has not moved. Depends on current room.
-
-
-            pass
+        
         
         if (self.state == States.FAILURE):
             #TODO hanfle failure

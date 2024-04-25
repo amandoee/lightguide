@@ -17,14 +17,12 @@ class Settings:
     end : str
     default_timeout : int
     bathroom_timeout : int
-    room_list : List[str]
 
-    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int, room_list: List[str]) -> None:
+    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int) -> None:
         self.start = start
         self.end = end
         self.default_timeout = default_timeout
         self.bathroom_timeout = bathroom_timeout
-        self.room_list = room_list
 
 
 
@@ -129,151 +127,6 @@ class DB:
         return obj
 
 
-str
-#for future use
-# class Cep2EvemanController:
-#     """ Listen for MQTT messages that contain sensor events and store them into the model. """
-
-#     TOPIC_MAIN_LEVEL = "cep2"
-#     ALL_TOPICS = f"{TOPIC_MAIN_LEVEL}/#"
-#     GET_EVENTS_REQUEST_TOPIC = f"{TOPIC_MAIN_LEVEL}/request/get_events"
-#     GET_EVENTS_RESPONSE_TOPIC = f"{TOPIC_MAIN_LEVEL}/response/get_events"
-#     STORE_EVENTS_TOPIC = f"{TOPIC_MAIN_LEVEL}/request/store_event"
-
-#     def __init__(self, mqtt_host: str, model: Cep2EvemanModel, mqtt_port: int = 1883) -> None:
-#         self.__connected = False
-#         self.__events_queue = Queue()
-#         self.__model = model
-#         self.__mqtt_client = MqttClient()
-#         self.__mqtt_client.on_connect = self.__on_connect
-#         self.__mqtt_client.on_disconnect = self.__on_disconnect
-#         self.__mqtt_client.on_message = self.__on_message
-#         self.__mqtt_host = mqtt_host
-#         self.__mqtt_port = mqtt_port
-#         self.__subscriber_thread = Thread(target=self.__worker,
-#                                           daemon=True)
-#         self.__stop_worker = Event()
-
-#     def start_listening(self) -> None:
-#         """ Start listening for published events.
-#         """
-#         # Connect to the database
-#         self.__model.connect()
-
-#         # In the client is already connected then stop here.
-#         if self.__connected:
-#             return
-
-#         # Connect to the host given in initializer.
-#         self.__mqtt_client.connect(self.__mqtt_host,
-#                                    self.__mqtt_port)
-#         self.__mqtt_client.loop_start()
-#         # Subscribe to all topics given in the initializer.
-#         self.__mqtt_client.subscribe(self.ALL_TOPICS)
-#         # Start the subscriber thread.
-#         self.__subscriber_thread.start()
-
-#     def stop_listening(self) -> None:
-#         """ Stop listening for published events.
-#         """
-#         self.__stop_worker.set()
-#         self.__mqtt_client.loop_stop()
-#         self.__mqtt_client.unsubscribe(self.ALL_TOPICS)
-#         self.__mqtt_client.disconnect()
-
-#         # Disconnect from the database
-#         self.__model.disconnect()
-
-#     def __on_connect(self, client, userdata, flags, rc) -> None:
-#         """ Callback invoked when a connection with the MQTT broker is established.
-
-#         Refer to paho-mqtt documentation for more information on this callback:
-#         https://www.eclipse.org/paho/index.php?page=clients/python/docs/index.php#callbacks
-#         """
-
-#         # Set connected flag to true. This is later used if multiple calls to connect are made. This
-#         # way the user does not need to very if the client is connected.
-#         self.__connected = True
-#         print("MQTT client connected")
-
-#     def __on_disconnect(self, client, userdata, rc) -> None:
-#         """ Callback invoked when the client disconnects from the MQTT broker occurs.
-
-#         Refer to paho-mqtt documentation for more information on this callback:
-#         https://www.eclipse.org/paho/index.php?page=clients/python/docs/index.php#callbacks
-#         """
-
-#         # Set connected flag to false. This is later used if multiple calls to connect are made.
-#         # This way the user does not need to very if the client is connected.
-#         self.__connected = False
-#         print("MQTT client disconnected")
-
-#     def __on_message(self, client, userdata, message: MQTTMessage) -> None:
-#         """ Callback invoked when a message has been received on a topic that the client subscribed.
-
-#         Refer to paho-mqtt documentation for more information on this callback:
-#         https://www.eclipse.org/paho/index.php?page=clients/python/docs/index.php#callbacks
-#         """
-
-#         # Push a message to the queue. This will later be processed by the worker.
-#         self.__events_queue.put(message)
-
-#     def __worker(self) -> None:
-#         """ This method pulls zigbee2mqtt messages from the queue of received messages, pushed when
-#         a message is received, i.e. by the __on_message() callback. This method will be stopped when
-#         the instance of zigbee2mqttClient disconnects, i.e. disconnect() is called and sets the
-#         __stop_worker event.
-#         """
-#         while not self.__stop_worker.is_set():
-#             try:
-#                 # Pull a message from the queue.
-#                 message = self.__events_queue.get(timeout=1)
-#             except Empty:
-#                 # This exception is raised when the queue pull times out. Ignore it and retry a new
-#                 # pull.
-#                 pass
-#             else:
-#                 # If a message was successfully pulled from the queue, then process it.
-#                 # NOTE: this else condition is part of the try and it is executed when the action
-#                 # inside the try does not throws and exception.
-#                 # The decode() transforms a byte array into a string, following the utf-8 encoding.
-#                 if not message:
-#                     return
-
-#                 if message.topic == self.STORE_EVENTS_TOPIC:
-#                     try:
-#                         event = Cep2EvemanEvent.from_json(message.payload.decode("utf-8"))
-#                         print(f"Storing event {event}")
-
-#                         #her blir den gemt i db
-#                         self.__model.store(event)
-
-
-#                     except KeyError:
-#                         print(f"Malformed JSON event: {message}")
-#                 elif message.topic == self.GET_EVENTS_REQUEST_TOPIC:
-#                     # Try to parse a json message with a payload of such as
-#                     # {"deviceId": "0x588e81fffe"}
-#                     # If a JSON payload is found, then it is parsed and the deviceId is used to
-#                     # retrive the events for this device. Other filter arugmetns can be addded here.
-#                     # If the payload has unknown keys, then the deviceId is None and all events are
-#                     # returned.
-#                     try:
-#                         json_obj = json.loads(message.payload.decode("utf-8"))
-#                     except json.JSONDecodeError as ex:
-#                         if message.payload:
-#                             print(f"Couldn't parse the JSON payload: {ex}")
-#                         device_id = None
-#                     else:
-#                         device_id = json_obj.get("deviceId")
-#                     # A get_events was received. thus retrieve the values from the database and
-#                     # publish them to the response topic.
-#                     events = [e.to_json() for e in self.__model.get_events(device_id)]
-
-#                     publish.single(hostname=self.__mqtt_host,
-#                                    port=self.__mqtt_port,
-#                                    topic=self.GET_EVENTS_RESPONSE_TOPIC,
-#                                    payload=json.dumps(events))
 
 
 
@@ -320,7 +173,7 @@ def main():
     
 
     model.connect()
-    #model.InsertLog(log=log)
+    model.InsertLog(log=log)
     SystemSettings = model.getSettings() #needs conversion into correct format for use
     print(SystemSettings.start)
 

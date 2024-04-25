@@ -4,10 +4,14 @@ from Cep2Controller import Cep2Controller
 from Cep2Model import Cep2Model, Cep2ZigbeeDevice
 import lightguiding as lg
 
-STARTTIME=datetime.datetime()
-ENDTIME=datetime.datetime()
-STARTTIME.hour=22
-ENDTIME.hour=9
+STARTTIME=datetime.time(22,0,0)
+ENDTIME=datetime.time(6,0,0)
+
+
+# TODAY=datetime.datetime.now()
+
+# STARTTIME=datetime.time(year=TODAY.year,month=TODAY.month,day=TODAY.day,hour=22,minute=0)
+# ENDTIME=datetime.time(year=TODAY.year,month=TODAY.month,day=TODAY,hour=9,minute=0)
 
 if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
@@ -20,22 +24,22 @@ if __name__ == "__main__":
 
     handler = lg.EventHandler()
 
-    #sleep(4)
+    sleep(4)
 
     wakeywakey = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
     handler.handleEvent(wakeywakey)
     
-    #sleep(2)
+    sleep(3)
     
     Movedto2 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
     handler.handleEvent(Movedto2)
 
-    #sleep(2)
+    sleep(3)
     
     Movedto3 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
     handler.handleEvent(Movedto3)
     
-    #sleep(2)
+    sleep(3)
     
     Movedto4 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
     handler.handleEvent(Movedto4)
