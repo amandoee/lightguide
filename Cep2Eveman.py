@@ -12,6 +12,22 @@ from mysql.connector import (connect as mysql_connect,
 #from paho.mqtt.client import Client as MqttClient, MQTTMessage
 #from paho.mqtt import publish
 
+class Settings:
+    start : str
+    end : str
+    default_timeout : int
+    bathroom_timeout : int
+    room_list : List[str]
+
+    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int, room_list: List[str]) -> None:
+        self.start = start
+        self.end = end
+        self.default_timeout = default_timeout
+        self.bathroom_timeout = bathroom_timeout
+        self.room_list = room_list
+
+
+
 @dataclass
 class LogEntry:
     """ Sensor events to be stored in the database. """
@@ -93,7 +109,8 @@ class DB:
 
         cursor.close()
 
-    def getSettings(self) -> Dict[str, int]:
+    
+    def getSettings(self) -> Settings:
         """ Retrieve settings from the database. """
         if not self.__mysql_connection:
             raise RuntimeError(f"Not connected to database {self.__database}.")
@@ -103,18 +120,16 @@ class DB:
         cursor = self.__mysql_connection.cursor()
         cursor.execute(query)
 
-        #format data to dict
-        desc = cursor.description
-        column_names = [col[0] for col in desc]
-        settings = [dict(zip(column_names, row)) for row in cursor.fetchall()]
-
+        settings = cursor.fetchall()
+        #print(settings)
+        #create settings object
+        obj = Settings(start=settings[-1][0], end=settings[-1][1], default_timeout=settings[-1][2], bathroom_timeout=settings[-1][3])
         cursor.close()
 
-        return settings
+        return obj
 
 
-
-
+str
 #for future use
 # class Cep2EvemanController:
 #     """ Listen for MQTT messages that contain sensor events and store them into the model. """
@@ -305,10 +320,9 @@ def main():
     
 
     model.connect()
-    model.InsertLog(log=log)
-    settings = model.getSettings()
-    print(settings)
-
+    #model.InsertLog(log=log)
+    SystemSettings = model.getSettings() #needs conversion into correct format for use
+    print(SystemSettings.start)
 
     model.disconnect()
 
