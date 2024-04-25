@@ -2,7 +2,9 @@ import datetime
 import time
 from enum import Enum
 import threading
-import Database as CE
+import DatabaseController as DBC
+from DBmodels import LogEntry, Settings
+
 
 
 
@@ -111,20 +113,13 @@ class EventHandler:
     current_room : room
     timer : int
     lasttimerecorded : float
-    model : CE.DB
+    model : DBC.DBController
     timeout : bool
 
     #Define thread for class
 
     def timeoutCounter(self):
         
-        
-        #Connect to db
-        self.model = CE.DB(host="192.168.32.97",
-                                        database="group1lightguide",
-                                        user="sodeChristian",
-                                        password="1234")
-        self.model.connect()
         SystemSettings = self.model.getSettings()
         
         #timeout in seconds
@@ -155,7 +150,7 @@ class EventHandler:
                     #Create timeout event
                     print("Timeout")
                     
-                    log = CE.LogEntry(
+                    log = LogEntry(
                         device_id = str(self.current_room.typeroom.name),
                         loglevel = "warning",
                         timestamp = datetime.datetime.now(),
@@ -164,7 +159,7 @@ class EventHandler:
                         type_= "Timeout"
                     )
                     
-                    self.model.InsertLog(log=log)
+                    self.model.queueLog(log=log)
 
                     #self.state=States.TIMEOUT
                     self.timeout=True
@@ -174,6 +169,8 @@ class EventHandler:
 
 
     def __init__(self) -> None:
+        self.model = DBC.DBController()
+        self.model.start()
         timeoutThread = threading.Thread(target=self.timeoutCounter)
         self.state = States.IDLE
         self.rooms = initRooms()
@@ -182,6 +179,7 @@ class EventHandler:
         #Start timeout thread
         timeoutThread.start()
         self.timeout=False
+
         
         
         
@@ -198,14 +196,6 @@ class EventHandler:
         self.timeout=False
         #self.current_room = self.rooms.get(event.place.typeroom)
 
-        self.model = CE.DB(host="192.168.32.97",
-                                        database="group1lightguide",
-                                        user="sodeChristian",
-                                        password="1234")
-        #self.model.connect()
-        #SystemSettings = self.model.getSettings()
-        
-        
                     
 
         if (self.state == States.IDLE):
@@ -234,7 +224,7 @@ class EventHandler:
                     print("Moved to next room. Turning off old room light")
                     #self.current_room.light.turn_off()
                     self.current_room = self.rooms.get(event.place.typeroom)
-                    log = CE.LogEntry(
+                    log = LogEntry(
                         device_id = str(self.current_room.typeroom.name),
                         loglevel = "Informational",
                         timestamp = datetime.datetime.now(),
@@ -242,7 +232,7 @@ class EventHandler:
                         device_type="sensor",
                         type_= "movement"
                     )
-                    self.model.InsertLog(log=log)
+                    self.model.queueLog(log=log)
 
                     
                     
@@ -279,7 +269,7 @@ class EventHandler:
                 if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:
                     print("Moved to previous room. Turning off old room light")
                     self.current_room = self.rooms.get(event.place.typeroom)
-                    log = CE.LogEntry(
+                    log = LogEntry(
                         device_id = str(self.current_room.typeroom.name),
                         loglevel = "Informational",
                         timestamp = datetime.datetime.now(),
@@ -287,7 +277,7 @@ class EventHandler:
                         device_type="sensor",
                         type_= "movement"
                     )
-                    self.model.InsertLog(log=log)
+                    self.model.queueLog(log=log)
                 
                 else:
                     print("UNEXPECTED ROOM HANDLE PLEASE")
