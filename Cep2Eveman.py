@@ -11,38 +11,8 @@ from mysql.connector import (connect as mysql_connect,
                              Error as MySqlError)
 #from paho.mqtt.client import Client as MqttClient, MQTTMessage
 #from paho.mqtt import publish
+from DBmodels import LogEntry, Settings
 
-class Settings:
-    start : str
-    end : str
-    default_timeout : int
-    bathroom_timeout : int
-
-    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int) -> None:
-        self.start = start
-        self.end = end
-        self.default_timeout = default_timeout
-        self.bathroom_timeout = bathroom_timeout
-
-
-
-@dataclass
-class LogEntry:
-    """ Sensor events to be stored in the database. """
-    device_id: str #device name
-    device_type: str #device type (light, sensor)
-    measurement: str #durations
-    timestamp_: datetime #"timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    loglevel : str #Informational, Warning, Error
-    type_ : str # Movement, Toilet, ToiletDuration
-
-    def __init__(self, device_id: str, device_type: str, measurement: str, timestamp:datetime,loglevel:str,type_:str ) -> None:
-        self.device_id = device_id
-        self.device_type = device_type
-        self.measurement = measurement
-        self.timestamp = timestamp
-        self.loglevel = loglevel
-        self.type_ = type_
 
 class DB:
 
@@ -99,13 +69,12 @@ class DB:
                  "VALUES(%s, %s, %s, %s,%s,%s);")
         cursor = self.__mysql_connection.cursor()
 
-        # If the value is a boolean, then convert it to a string in the format "true" or "false".
-        # Other value types will be automatically converted to a string, once the query is executed.
-
+        #try catch block
         cursor.execute(query, (log.timestamp.strftime("%Y-%m-%d %H:%M:%S"), log.loglevel, log.type_, log.measurement, log.device_id, log.device_type))
         self.__mysql_connection.commit()
-
+            
         cursor.close()
+        
 
     
     def getSettings(self) -> Settings:
