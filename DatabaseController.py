@@ -7,7 +7,7 @@ import time
 
 
 class DBController:
-    db = None 
+    db : Database.DB 
     
     #queue of logs
     logs = []
@@ -20,24 +20,24 @@ class DBController:
             password="1234"
         )
     
-    
-    def reconnect(self):
-        while True:
-            print("Trying to connect to database")
+    def tryconnect(self):
+        while (not self.db.get_status()):
             try:
                 self.db.connect()
-                return
+                
             except Exception as e:
-                if "2003" in str(e):
-                    print("Connection refused, trying again in 5 seconds")
-                    time.sleep(5)
+                pass
+                #print(e)
 
+            time.sleep(2)
+        return
     #connect to db and start posting logs
     def start(self):
-        self.reconnect()
+        connectThread = threading.Thread(target=self.tryconnect)
+        connectThread.start()
         postThread = threading.Thread(target=self.postLogs)
         postThread.start()
-    
+
     def disconnect(self):
         self.db.disconnect()
 
@@ -49,7 +49,7 @@ class DBController:
     
     def postLogs(self):
         while True:
-            print("test")
+            print(self.logs)
             if self.logs:
                 if len(self.logs) > 200:
                     raise Exception("buffer is full")
@@ -58,17 +58,16 @@ class DBController:
                     self.db.InsertLog(log)
                     print("posted log")
                 except Exception as e:
-                        print("Lost connection to database, trying to reconnect")
-                        self.reconnect()
+                        print(e)
             
-            time.sleep(10)
+            time.sleep(2)
 
 
 #create a main function to test the controller
 def main():
     controller = DBController()
     log = LogEntry(
-        device_id = "test",
+        device_id = "dbtester",
         loglevel = "test",
         timestamp = datetime.datetime.now(),
         measurement = "120",
@@ -77,9 +76,13 @@ def main():
     )
 
     controller.start()
-    for i in range(4):
+    for i in range(30):
         controller.queueLog(log)
+        print("IM NOT STUCK")
+        time.sleep(2)
    
+
+
 
 
 if __name__ == "__main__":

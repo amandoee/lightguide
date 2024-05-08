@@ -33,18 +33,18 @@ class DB:
         if self.__mysql_connection:
             return
 
-        self.__mysql_connection = mysql_connect(host=self.__host,
-                                                    user=self.__user,
-                                                    password=self.__password)
+        # Try to connect to the database. If the connection fails, then raise an exception.
+        self.__mysql_connection = mysql_connect(
+                host=self.__host,
+                database=self.__database,
+                user=self.__user,
+                password=self.__password
+            )
         
-        #set timeout
-        self.__mysql_connection._connection_timeout = 1
 
-        # Select the database given in the initalizer. If it fails, an exception is raised, that
-        # can be used to create the database.
-        self.__mysql_connection.cursor().execute(f"USE {self.__database}")
-        print(f"Connected to database {self.__database}.")
-
+    def get_status(self):
+        return self.__mysql_connection
+        
 
     def disconnect(self):
         """ Disconnect from the database.
@@ -62,10 +62,8 @@ class DB:
                  "VALUES(%s, %s, %s, %s,%s,%s);")
         cursor = self.__mysql_connection.cursor()
 
-        #try catch block
-        cursor.execute(query, (log.timestamp.strftime("%Y-%m-%d %H:%M:%S"), log.loglevel, log.type_, log.measurement, log.device_id, log.device_type))
+        cursor.execute(query, (log.timestamp, log.loglevel, log.type_, log.measurement, log.device_id, log.device_type))
         self.__mysql_connection.commit()
-            
         cursor.close()
         
 
