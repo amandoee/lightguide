@@ -35,6 +35,7 @@ class DBController:
     def start(self):
         connectThread = threading.Thread(target=self.tryconnect)
         connectThread.start()
+        connectThread.join()
         postThread = threading.Thread(target=self.postLogs)
         postThread.start()
 

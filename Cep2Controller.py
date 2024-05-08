@@ -3,17 +3,28 @@ from Cep2Model import Cep2Model
 from Cep2WebClient import Cep2WebClient, Cep2WebDeviceEvent
 from Cep2Zigbee2mqttClient import (Cep2Zigbee2mqttClient,
                                    Cep2Zigbee2mqttMessage, Cep2Zigbee2mqttMessageType)
-
-class Cep2Controller:
+class MQTTController:
     HTTP_HOST = "http://localhost:8000"
     MQTT_BROKER_HOST = "localhost"
     MQTT_BROKER_PORT = 1883
+    
+    queue = []
+    
 
     """ The controller is responsible for managing events received from zigbee2mqtt and handle them.
     By handle them it can be process, store and communicate with other parts of the system. In this
     case, the class listens for zigbee2mqtt events, processes them (turn on another Zigbee device)
     and send an event to a remote HTTP server.
     """
+    
+    def popQueue(self):        
+        return self.queue.pop(0)
+    
+    def getQueueLength(self):
+        return len(self.queue)
+
+    def enqueue(self,event : Cep2Zigbee2mqttMessage):
+        self.queue.append(event)
 
     def __init__(self, devices_model: Cep2Model) -> None:
         """ Class initializer. The actuator and monitor devices are loaded (filtered) only when the
@@ -37,6 +48,9 @@ class Cep2Controller:
         """ Stop listening for zigbee2mqtt events.
         """
         self.__z2m_client.disconnect()
+        
+    def turnOnLight(lightID : str):
+        print("turn on")
 
     def __zigbee2mqtt_event_received(self, message: Cep2Zigbee2mqttMessage) -> None:
         """ Process an event received from zigbee2mqtt. This function given as callback to
@@ -67,7 +81,16 @@ class Cep2Controller:
         device_id = tokens[1]
         
 
-
+        #Create event for event handler
+        
+        #Set event in queue
+        
+        
+        
+        if not ("strip" in device_id):
+            self.enqueue(message)
+        
+        
 
         if (device_id=='pir1'):
             print(device_id)

@@ -1,6 +1,5 @@
 from time import sleep
 import datetime
-from Cep2Controller import Cep2Controller
 from Cep2Model import Cep2Model, Cep2ZigbeeDevice
 import lightguiding as lg
 
@@ -15,61 +14,77 @@ ENDTIME=datetime.time(6,0,0)
 
 if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
-    #devices_model = Cep2Model()
-    
-    # Create a controller and give it the data model that was instantiated.
-    #controller = Cep2Controller(devices_model)
-    #controller.start()
 
     handler = lg.EventHandler()
 
     sleep(4)
 
+    
 
-    wakeywakey = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
+    #MOVEMENTS
+    bedroom = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
+    livingroom = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
+    kitchen = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
+    guest_room = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
+    bathroom = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BATHROOM))
+    
+    
+    
+    
 
-    handler.handleEvent(wakeywakey)
-    print("test")
+    # handler.handleEvent(bedroom)
+    # print("test")
 
-    sleep(3)
+    # sleep(3)
     
-    Movedto2 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
-    handler.handleEvent(Movedto2)
+    # handler.handleEvent(livingroom)
 
-    sleep(3)
+    # sleep(3)
     
-    Movedto3 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
-    handler.handleEvent(Movedto3)
+    # handler.handleEvent(kitchen)
     
-    sleep(3)
+    # sleep(3)
     
-    Movedto4 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
-    handler.handleEvent(Movedto4)
+    # #Going back to living room
+    
+    
+   
+    
+    # sleep(3)
 
-    #sleep(2)
     
-    Movedto5 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BATHROOM))
-    handler.handleEvent(Movedto5)
-    print("Taking a piss...")
-    sleep(2)
     
-    Movedto6 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
-    handler.handleEvent(Movedto6)
-    
-    #sleep(2)
-    
-    Movedto7 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
-    handler.handleEvent(Movedto7)
+    # handler.handleEvent(Movedto4)
+    # sleep(3)
 
-    #sleep(2)
+    # handler.handleEvent(Movedto2)
+    # sleep(3)
+    # handler.handleEvent(Movedto4)
+    # sleep(3)
+
+    # #sleep(2)
     
-    Movedto8 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
-    handler.handleEvent(Movedto8)
+    # handler.handleEvent(Movedto5)
+    # print("Taking a piss...")
+    # sleep(2)
     
-    #sleep(2)
+    # Movedto6 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
+    # #handler.handleEvent(Movedto6)
     
-    Movedto9 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
-    handler.handleEvent(Movedto9)
+    # #sleep(2)
+    
+    # Movedto7 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
+    # #handler.handleEvent(Movedto7)
+
+    # #sleep(2)
+    
+    # Movedto8 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
+    # #handler.handleEvent(Movedto8)
+    
+    # #sleep(2)
+    
+    # Movedto9 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
+    # #handler.handleEvent(Movedto9)
     
     
 
