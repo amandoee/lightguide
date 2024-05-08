@@ -51,10 +51,13 @@ class MQTTController:
     
     #TODO: Make light logic
     def turnOnLight(self,lightID : str):
-        print("turn on")
+        self.__z2m_client.publish_event("","pir")
+        self.__z2m_client.change_state(lightID+"strip","ON")
         
+    def turnOffLight(self,lightID : str):
         self.__z2m_client.publish_event("","pir")
         self.__z2m_client.change_state(lightID+"strip","OFF")
+
 
     def __zigbee2mqtt_event_received(self, message: Cep2Zigbee2mqttMessage) -> None:
         """ Process an event received from zigbee2mqtt. This function given as callback to
@@ -83,34 +86,10 @@ class MQTTController:
 
         # Retrieve the device ID from the topic.
         device_id = tokens[1]
-        
 
-        #Create event for event handler
-        
         #Set event in queue
-        
-        
-        
         if not ("strip" in device_id and message.event["occupancy"]):
             self.enqueue(message)
         
-        
-
-        if (device_id=='pir1'):
-            
-            self.__z2m_client.change_state("strip",new_state)
-            self.__z2m_client.publish_event("","pir")
-            self.__z2m_client.change_state("strip2","OFF")
-
-
-        
-        if (device_id=='pir2'):
-            print(device_id)
-            occupancy = message.event["occupancy"]
-            new_state = "ON" if occupancy else "OFF"
-            print(new_state)
-            self.__z2m_client.change_state("strip2",new_state)
-            self.__z2m_client.publish_event("","pir2")
-            self.__z2m_client.change_state("strip","OFF")
 
 

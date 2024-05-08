@@ -2,7 +2,8 @@ from time import sleep
 import datetime
 from Cep2Model import Cep2Model, Cep2ZigbeeDevice
 import lightguiding as lg
-
+import Cep2Controller
+import DatabaseController
 STARTTIME=datetime.time(22,0,0)
 ENDTIME=datetime.time(6,0,0)
 
@@ -14,8 +15,9 @@ ENDTIME=datetime.time(6,0,0)
 
 if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
-
-    handler = lg.EventHandler()
+    dbctrl = DatabaseController()
+    ctrl = Cep2Controller()
+    handler = lg.EventHandler(ctrl=ctrl, dbctrl=dbctrl )
 
     sleep(4)
 

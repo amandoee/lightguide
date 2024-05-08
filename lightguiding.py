@@ -8,7 +8,6 @@ from Cep2Controller import MQTTController
 
 
 
-
 #enum states
 class States(Enum):
     IDLE = 1
@@ -17,29 +16,6 @@ class States(Enum):
     TIMEOUT = 4
     FAILURE = 5
     UNACTIVE = 6
-
-class Light:
-    lightID: str
-    status : bool
-
-    def turn_on(self,placement):
-        #TODO
-        #Color is dependent on the room being next or current.
-        if placement=="current_color":
-            #Turn current room color
-            pass
-        else:
-            #Turn next room color
-            pass
-
-        pass
-
-    def turn_off(self):
-        pass
-
-class Sensor:
-    sensorID: str
-    status : bool 
 
 class roomType(Enum):
     GUESTROOM = 4
@@ -66,8 +42,6 @@ class room:
     typeroom: roomType
     forwardRoom: None
     backwardRoom: None
-    light : Light
-    sensor: Sensor
 
     def __init__(self,roomID) -> None:
         self.typeroom = roomID
@@ -131,6 +105,20 @@ class EventHandler:
     timeout : bool
     mqttController : MQTTController
 
+
+
+    def createInfoLog(self,room):
+        log = LogEntry(
+                        device_id = str(room),
+                        loglevel = "Informational",
+                        timestamp = datetime.datetime.now(),
+                        measurement = str(time.time()-self.lasttimerecorded),
+                        device_type="sensor",
+                        type_= "movement"
+                    )
+        return log
+
+
     #Define thread for class
 
     def timeoutCounter(self):
@@ -191,18 +179,17 @@ class EventHandler:
                 queuePlace = room(roomID=getRoomType(queueMessage.topic.split("/")[1]))
                 queueEvent = lightEvent(type=EventType(EventType.MOVEMENT),place=queuePlace)
                 
-                
                 print(getRoomType(queueMessage.topic.split("/")[1]))
                 
                 self.handleEvent(queueEvent)
             
 
-    def __init__(self) -> None:
-        self.model = DBC.DBController()
+    def __init__(self, ctrl, dbctrl) -> None:
+        self.model = dbctrl
         self.model.start()
         
         # Create a controller and give it the data model that was instantiated.
-        self.mqttController = MQTTController()
+        self.mqttController = ctrl
         self.mqttController.start()
         
         timeoutThread = threading.Thread(target=self.timeoutCounter)
@@ -219,9 +206,70 @@ class EventHandler:
         listenEventThread = threading.Thread(target=self.listenForEvents)
         listenEventThread.start()
         
-        
-        
-        
+    
+    def doForwardLogic(self, event:lightEvent):
+                if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.forwardRoom.typeroom:
+                    #turn of light and update current room
+                    self.mqttController.turnOffLight(self.current_room.typeroom.name)
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #send log to database controller
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                    
+                    #turn on current room and next room
+                    self.mqttController.turnOnLight(self.current_room.typeroom.name)
+                    self.mqttController.turnOnLight(self.current_room.forwardRoom.typeroom.name)
+
+                #user decided to turn around
+                elif(event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom):
+                    self.state=States.BACKWARD
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #log event
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+
+
+                    
+                #unexpected event
+                else: #TELEPORT. Set room as current and assume direction for bedroom
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                    self.state=States.BACKWARD
+                    
+                #self.current_room.light.turn_on("current")
+                #self.current_room.forwardRoom.light.turn_on("next")
+                return
+
+
+    def doBackwardLogic(self, event:lightEvent):
+        #check if source id from event is the expected
+                #self.current_room.light.turn_on("current_color")
+                #self.current_room.backwardRoom.light.turn_on("next_color") 
+                if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                
+                #If room is the opposite direction of expected, flip direction state
+                elif(event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.forwardRoom.typeroom): 
+                    self.state=States.FORWARD
+                    
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                    
+                    #Logic for unexpected spawn/teleports
+                
+                else: #TELEPORT. Set room as current and assume direction for bedroom
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                    self.state=States.BACKWARD
+                return
         
     #TODO: Light guide turns off after inactivity in bedroom.
     
@@ -236,92 +284,24 @@ class EventHandler:
   
 
         if (self.state == States.IDLE):
-            print("here")
             if(event.place.typeroom == roomType.BEDROOM):
-                print("in bedroom")
-                #activate system
                 self.state = States.FORWARD
                 self.current_room = self.rooms.get(roomType.BEDROOM)
-                print("WE HAVE WOKEN")
                 return
 
-        print("---")
-        print(event.type)
-        print(self.current_room.typeroom)
-        print(self.current_room.forwardRoom.typeroom)
         
         if (event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.typeroom):
-                    print("Movement in same room detected")
+                    return
 
 
         elif (self.state == States.FORWARD):
+            #reached the bathroom
             if self.current_room.typeroom == roomType.BATHROOM:
                 self.state = States.BACKWARD
-                print(self.state)
                 
             else:
-                print(self.state)
-                # possibly advance room
-                print(event.place.typeroom)
-                print(self.rooms.get(self.current_room.forwardRoom.typeroom).typeroom)
-                
-                
-                if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.forwardRoom.typeroom:
-                    print("Moved to next room. Turning off old room light")
-                    #self.current_room.light.turn_off()
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                    
-                    self.mqttController.turnOnLight(self.current_room.typeroom.name)
-
-                    
-                    
-                    
-                elif(event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom): #If room is the opposite direction of expected, flip direction state
-                    print("Went opposite. Flipping direction")
-                    self.state=States.BACKWARD
-                    
-                    print("opposite room than expected. Flipping direction")
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                    #Logic for unexpected spawn/teleports
-                
-                else: #TELEPORT. Set room as current and assume direction for bedroom
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    print("Teleport to", self.current_room.typeroom.name)
-
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                    print("Setting direction towards bed")
-                    self.state=States.BACKWARD
-                    
-                    
-                print("Init new current room")
-                #self.current_room.light.turn_on("current")
-                #self.current_room.forwardRoom.light.turn_on("next")
+                #continued forward
+                self.doForwardLogic(event=event)
                 return
             
 
@@ -337,61 +317,11 @@ class EventHandler:
                     self.state = States.IDLE
                 
             else:
-                #check if source id from event is the expected
-                #self.current_room.light.turn_on("current_color")
-                #self.current_room.backwardRoom.light.turn_on("next_color")
+                #continued backwards:
+                self.doBackwardLogic(event=event)
+                return
                 
-                
-                if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:
-                    print("Moved to previous room. Turning off old room light")
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                
-                elif(event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.forwardRoom.typeroom): #If room is the opposite direction of expected, flip direction state
-                    self.state=States.FORWARD
-                    
-                    print("opposite room than expected. Flipping direction")
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                    
-                    #Logic for unexpected spawn/teleports
-                
-                else: #TELEPORT. Set room as current and assume direction for bedroom
-                    self.current_room = self.rooms.get(event.place.typeroom)
-                    print("Teleport to", self.current_room.typeroom.name)
-                    log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
-                        device_type="sensor",
-                        type_= "movement"
-                    )
-                    self.model.queueLog(log=log)
-                    print("Setting direction towards bed")
-                    self.state=States.BACKWARD
         
-        
-        
-        if (self.state == States.FAILURE):
-            #TODO hanfle failure
-            pass
         
         if (self.state == States.UNACTIVE):
             pass
