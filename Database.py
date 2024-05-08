@@ -39,7 +39,7 @@ class DB:
         # Select the database given in the initalizer. If it fails, an exception is raised, that
         # can be used to create the database.
         self.__mysql_connection.cursor().execute(f"USE {self.__database}")
-        
+        print(f"Connected to database {self.__database}.")
 
 
     def disconnect(self):

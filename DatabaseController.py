@@ -22,6 +22,7 @@ class DBController:
     
     def reconnect(self):
         while True:
+            print("Trying to connect to database")
             try:
                 self.db.connect()
                 return
@@ -47,18 +48,21 @@ class DBController:
     
     def postLogs(self):
         while True:
+            print("test")
             if self.logs:
                 if len(self.logs) > 200:
                     raise Exception("buffer is full")
                 try:
-                    self.db.InsertLog(self.logs[0])
-                    self.logs.pop(0)
+                    log = self.logs.pop(0)
+                    self.db.InsertLog(log)
+                    print("posted log")
                 except Exception as e:
+                        print("Lost connection to database, trying to reconnect")
                         self.reconnect()
             
             time.sleep(10)
 
-            
+
 #create a main function to test the controller
 def main():
     controller = DBController()
@@ -71,9 +75,10 @@ def main():
         type_= "Movement"
     )
 
+    controller.start()
     for i in range(4):
         controller.queueLog(log)
-    controller.start()
+   
 
 
 if __name__ == "__main__":
