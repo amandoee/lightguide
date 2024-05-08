@@ -2,7 +2,6 @@ import datetime
 import time
 from enum import Enum
 import threading
-from Cep2Model import Cep2Model
 import DatabaseController as DBC
 from DBmodels import LogEntry, Settings
 from Cep2Controller import MQTTController
@@ -24,6 +23,7 @@ class Light:
     status : bool
 
     def turn_on(self,placement):
+        #TODO
         #Color is dependent on the room being next or current.
         if placement=="current_color":
             #Turn current room color
@@ -47,8 +47,18 @@ class roomType(Enum):
     BEDROOM = 0
     LIVINGROOM = 3
     KITCHEN = 1
-    
-    
+
+def getRoomType(roomstr : str):
+    if (roomstr=="GUESTROOM"):
+        return roomType.GUESTROOM
+    if (roomstr=="BATHROOM"):
+        return roomType.BATHROOM
+    if (roomstr=="BEDROOM"):
+        return roomType.BEDROOM
+    if (roomstr=="LIVINGROOM"):
+        return roomType.LIVINGROOM
+    if (roomstr=="KITCHEN"):
+        return roomType.KITCHEN
 
 
 
@@ -58,7 +68,6 @@ class room:
     backwardRoom: None
     light : Light
     sensor: Sensor
-    isCurrent : bool = False
 
     def __init__(self,roomID) -> None:
         self.typeroom = roomID
@@ -90,7 +99,8 @@ def initRooms():
     bathroom = room(roomType.BATHROOM)
 
     #Map
-    bedroom.isCurrent=True
+    bedroom.backwardRoom=bedroom
+    
     bedroom.forwardRoom= living_room
     living_room.backwardRoom=bedroom
     
@@ -102,6 +112,8 @@ def initRooms():
     
     guest_room.forwardRoom=bathroom
     bathroom.backwardRoom=guest_room
+    
+    bathroom.forwardRoom=bathroom
     
     rooms = {roomType.BEDROOM:bedroom, roomType.KITCHEN:kitchen, roomType.BATHROOM:bathroom, roomType.LIVINGROOM:living_room,roomType.GUESTROOM:guest_room}
 
@@ -176,8 +188,11 @@ class EventHandler:
                 #Create event from Queue
                 queueMessage = self.mqttController.popQueue()
                 
-                queuePlace = room(roomID=queueMessage.topic.split("/")[1])
+                queuePlace = room(roomID=getRoomType(queueMessage.topic.split("/")[1]))
                 queueEvent = lightEvent(type=EventType(EventType.MOVEMENT),place=queuePlace)
+                
+                
+                print(getRoomType(queueMessage.topic.split("/")[1]))
                 
                 self.handleEvent(queueEvent)
             
@@ -187,8 +202,8 @@ class EventHandler:
         self.model.start()
         
         # Create a controller and give it the data model that was instantiated.
-        mqttController = MQTTController(Cep2Model())
-        mqttController.start()
+        self.mqttController = MQTTController()
+        self.mqttController.start()
         
         timeoutThread = threading.Thread(target=self.timeoutCounter)
         self.state = States.IDLE
@@ -198,6 +213,8 @@ class EventHandler:
         #Start timeout thread
         timeoutThread.start()
         self.timeout=False
+        
+        self.current_room = self.rooms.get(roomType.BEDROOM)
 
         listenEventThread = threading.Thread(target=self.listenForEvents)
         listenEventThread.start()
@@ -206,7 +223,7 @@ class EventHandler:
         
         
         
-
+    #TODO: Light guide turns off after inactivity in bedroom.
     
     def handleEvent(self, event : lightEvent):
         #check if event is deactivate/active or error
@@ -216,8 +233,7 @@ class EventHandler:
         self.lasttimerecorded = now
         self.timeout=False
         #self.current_room = self.rooms.get(event.place.typeroom)
-
-                    
+  
 
         if (self.state == States.IDLE):
             print("here")
@@ -229,7 +245,12 @@ class EventHandler:
                 print("WE HAVE WOKEN")
                 return
 
-        if (event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room):
+        print("---")
+        print(event.type)
+        print(self.current_room.typeroom)
+        print(self.current_room.forwardRoom.typeroom)
+        
+        if (event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.typeroom):
                     print("Movement in same room detected")
 
 
@@ -258,6 +279,8 @@ class EventHandler:
                         type_= "movement"
                     )
                     self.model.queueLog(log=log)
+                    
+                    self.mqttController.turnOnLight(self.current_room.typeroom.name)
 
                     
                     
@@ -317,8 +340,6 @@ class EventHandler:
                 #check if source id from event is the expected
                 #self.current_room.light.turn_on("current_color")
                 #self.current_room.backwardRoom.light.turn_on("next_color")
-                
-                print(event.place.typeroom,self.current_room.backwardRoom.typeroom)
                 
                 
                 if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:

@@ -26,14 +26,13 @@ class MQTTController:
     def enqueue(self,event : Cep2Zigbee2mqttMessage):
         self.queue.append(event)
 
-    def __init__(self, devices_model: Cep2Model) -> None:
+    def __init__(self) -> None:
         """ Class initializer. The actuator and monitor devices are loaded (filtered) only when the
         class is instantiated. If the database changes, this is not reflected.
 
         Args:
             devices_model (Cep2Model): the model that represents the data of this application
         """
-        self.__devices_model = devices_model
         self.__z2m_client = Cep2Zigbee2mqttClient(host=self.MQTT_BROKER_HOST,
                                                   port=self.MQTT_BROKER_PORT,
                                                   on_message_clbk=self.__zigbee2mqtt_event_received)
@@ -48,9 +47,14 @@ class MQTTController:
         """ Stop listening for zigbee2mqtt events.
         """
         self.__z2m_client.disconnect()
-        
-    def turnOnLight(lightID : str):
+    
+    
+    #TODO: Make light logic
+    def turnOnLight(self,lightID : str):
         print("turn on")
+        
+        self.__z2m_client.publish_event("","pir")
+        self.__z2m_client.change_state(lightID+"strip","OFF")
 
     def __zigbee2mqtt_event_received(self, message: Cep2Zigbee2mqttMessage) -> None:
         """ Process an event received from zigbee2mqtt. This function given as callback to
@@ -87,16 +91,13 @@ class MQTTController:
         
         
         
-        if not ("strip" in device_id):
+        if not ("strip" in device_id and message.event["occupancy"]):
             self.enqueue(message)
         
         
 
         if (device_id=='pir1'):
-            print(device_id)
-            occupancy = message.event["occupancy"]
-            new_state = "ON" if occupancy else "OFF"
-            print(new_state)
+            
             self.__z2m_client.change_state("strip",new_state)
             self.__z2m_client.publish_event("","pir")
             self.__z2m_client.change_state("strip2","OFF")

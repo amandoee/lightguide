@@ -90,9 +90,12 @@ if __name__ == "__main__":
 
     #print("Waiting for events...")
 
+    #TODO: For system time periods activate again
+
     while True:
-        
-        if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
-            handler.state=lg.States.UNACTIVE
+        pass
+    #    
+    #    if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
+    #        handler.state=lg.States.UNACTIVE
 
     controller.stop()
