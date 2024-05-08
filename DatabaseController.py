@@ -20,6 +20,7 @@ class DBController:
             password="1234"
         )
     
+    
     def reconnect(self):
         while True:
             print("Trying to connect to database")

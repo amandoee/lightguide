@@ -23,7 +23,7 @@ class DB:
         self.__user = user
         self.__password = password
 
-
+    
     def connect(self):
         """ Connect to database given in the initializer. The connection is left open and must be
         closed explicitly by the user using disconnect().
@@ -36,6 +36,10 @@ class DB:
         self.__mysql_connection = mysql_connect(host=self.__host,
                                                     user=self.__user,
                                                     password=self.__password)
+        
+        #set timeout
+        self.__mysql_connection._connection_timeout = 1
+
         # Select the database given in the initalizer. If it fails, an exception is raised, that
         # can be used to create the database.
         self.__mysql_connection.cursor().execute(f"USE {self.__database}")
