@@ -1,4 +1,4 @@
-import Cep2Eveman
+import Database
 from DBmodels import LogEntry, Settings
 import datetime
 import threading
@@ -13,17 +13,26 @@ class DBController:
     logs = []
 
     def __init__(self):
-        self.db = Cep2Eveman.DB(
+        self.db = Database.DB(
             host="192.168.32.97",
             database="group1lightguide",
             user="sodeChristian",
             password="1234"
         )
     
+    def reconnect(self):
+        while True:
+            try:
+                self.db.connect()
+                return
+            except Exception as e:
+                if "2003" in str(e):
+                    print("Connection refused, trying again in 5 seconds")
+                    time.sleep(5)
 
     #connect to db and start posting logs
-    def start(self): 
-        self.db.connect()
+    def start(self):
+        self.reconnect()
         postThread = threading.Thread(target=self.postLogs)
         postThread.start()
     
@@ -44,8 +53,8 @@ class DBController:
                 try:
                     self.db.InsertLog(self.logs[0])
                     self.logs.pop(0)
-                except:
-                    pass
+                except Exception as e:
+                        self.reconnect()
             
             time.sleep(10)
 

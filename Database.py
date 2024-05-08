@@ -33,24 +33,13 @@ class DB:
         if self.__mysql_connection:
             return
 
-        try:
-            self.__mysql_connection = mysql_connect(host=self.__host,
+        self.__mysql_connection = mysql_connect(host=self.__host,
                                                     user=self.__user,
                                                     password=self.__password)
-            # Select the database given in the initalizer. If it fails, an exception is raised, that
-            # can be used to create the database.
-            self.__mysql_connection.cursor().execute(f"USE {self.__database}")
-            print("succes")
-
-        except MySqlError as err:
-            # If the database doesn't exist, then create it.
-            if err.errno == mysql_errorcode.ER_BAD_DB_ERROR:
-                print("Database does not exist. Will be created.")
-                self.__create_database()
-                print(f"Database {self.__database} created successfully.")
-                self.__mysql_connection.database = self.__database
-            else:
-                print(f"Database error = {err}")
+        # Select the database given in the initalizer. If it fails, an exception is raised, that
+        # can be used to create the database.
+        self.__mysql_connection.cursor().execute(f"USE {self.__database}")
+        
 
 
     def disconnect(self):
