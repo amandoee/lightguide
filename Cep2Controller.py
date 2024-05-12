@@ -88,7 +88,8 @@ class MQTTController:
         device_id = tokens[1]
 
         #Set event in queue
-        if not ("strip" in device_id and message.event["occupancy"]):
+        #TODO: Figure out how to parse occupancy
+        if not ("strip" in device_id):# and message.event["occupancy"]):
             self.enqueue(message)
         
 

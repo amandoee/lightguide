@@ -123,11 +123,11 @@ class EventHandler:
 
     def timeoutCounter(self):
         
-        SystemSettings = self.model.getSettings()
+        #SystemSettings = self.model.getSettings()
 
         #timeout in seconds
-        X=SystemSettings.bathroom_timeout*60
-     
+        #X=SystemSettings.bathroom_timeout*60
+        X=60*2
         while True:
             
             #if (time.time() > self.lasttimerecorded + X):
@@ -142,11 +142,13 @@ class EventHandler:
             elif (self.timeout == False):
                 
                 if (self.current_room.typeroom==roomType.BATHROOM):
-                    X=SystemSettings.bathroom_timeout*60
+                    #X=SystemSettings.bathroom_timeout*60
+                    X=60*2
                 elif (self.current_room==roomType.BEDROOM):
                     X=3
                 else:
-                    X=SystemSettings.default_timeout
+                    X=60
+                    #X=SystemSettings.default_timeout
 
 
                 if (time.time() > self.lasttimerecorded + X):
@@ -186,7 +188,7 @@ class EventHandler:
 
     def __init__(self, ctrl, dbctrl) -> None:
         self.model = dbctrl
-        self.model.start()
+        #self.model.start()
         
         # Create a controller and give it the data model that was instantiated.
         self.mqttController = ctrl
@@ -249,6 +251,7 @@ class EventHandler:
                 #self.current_room.light.turn_on("current_color")
                 #self.current_room.backwardRoom.light.turn_on("next_color") 
                 if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.backwardRoom.typeroom:
+                    
                     self.current_room = self.rooms.get(event.place.typeroom)
                     log = self.createInfoLog(self.current_room.typeroom.name)
                     self.model.queueLog(log=log)
@@ -287,6 +290,7 @@ class EventHandler:
             if(event.place.typeroom == roomType.BEDROOM):
                 self.state = States.FORWARD
                 self.current_room = self.rooms.get(roomType.BEDROOM)
+                self.mqttController.turnOnLight("BEDROOM")
                 return
 
         
