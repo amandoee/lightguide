@@ -47,10 +47,10 @@ class MQTTController:
         """ Stop listening for zigbee2mqtt events.
         """
         self.__z2m_client.disconnect()
-    
-    
+        
     #TODO: Make light logic
     def turnOnLight(self,lightID : str):
+        
         self.__z2m_client.publish_event("","pir")
         self.__z2m_client.change_state(lightID+"strip","ON")
         

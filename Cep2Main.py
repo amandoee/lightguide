@@ -17,9 +17,11 @@ if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
     dbctrl = DBController()
     ctrl = Cep2Controller.MQTTController()
+    sleep(6)
+
     handler = lg.EventHandler(ctrl=ctrl, dbctrl=dbctrl )
 
-    sleep(4)
+    sleep(6)
 
     
 
@@ -32,64 +34,27 @@ if __name__ == "__main__":
     
     
     
-    
-
     # handler.handleEvent(bedroom)
-    # print("test")
-
-    # sleep(3)
-    
+    # sleep(2)
     # handler.handleEvent(livingroom)
-
-    # sleep(3)
-    
+    # sleep(2)
     # handler.handleEvent(kitchen)
-    
-    # sleep(3)
-    
-    # #Going back to living room
-    
-    
-   
-    
-    # sleep(3)
-
-    
-    
-    # handler.handleEvent(Movedto4)
-    # sleep(3)
-
-    # handler.handleEvent(Movedto2)
-    # sleep(3)
-    # handler.handleEvent(Movedto4)
-    # sleep(3)
-
-    # #sleep(2)
-    
-    # handler.handleEvent(Movedto5)
-    # print("Taking a piss...")
+    # sleep(2)
+    # handler.handleEvent(bedroom)
     # sleep(2)
     
-    # Movedto6 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.GUESTROOM))
-    # #handler.handleEvent(Movedto6)
-    
-    # #sleep(2)
-    
-    # Movedto7 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.KITCHEN))
-    # #handler.handleEvent(Movedto7)
-
-    # #sleep(2)
-    
-    # Movedto8 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.LIVINGROOM))
-    # #handler.handleEvent(Movedto8)
-    
-    # #sleep(2)
-    
-    # Movedto9 = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BEDROOM))
-    # #handler.handleEvent(Movedto9)
+    # handler.handleEvent(bathroom)
+    # sleep(2)
+    # handler.handleEvent(guest_room)
+    # sleep(2)
+    # handler.handleEvent(kitchen)
+    # sleep(2)
+    # handler.handleEvent(livingroom)
+    # sleep(2)
+    # handler.handleEvent(bedroom)
+    # sleep(2)
     
     
-
     #print("Waiting for events...")
 
     #TODO: For system time periods activate again
