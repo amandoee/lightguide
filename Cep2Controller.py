@@ -21,6 +21,7 @@ class MQTTController:
         return self.queue.pop(0)
     
     def getQueueLength(self):
+        return 0
         return len(self.queue)
 
     def enqueue(self,event : Cep2Zigbee2mqttMessage):
@@ -48,7 +49,6 @@ class MQTTController:
         """
         self.__z2m_client.disconnect()
         
-    #TODO: Make light logic
     def turnOnLight(self,lightID : str):
         
         self.__z2m_client.publish_event("","pir")

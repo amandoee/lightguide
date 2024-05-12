@@ -17,11 +17,10 @@ if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
     dbctrl = DBController()
     ctrl = Cep2Controller.MQTTController()
-    sleep(6)
 
     handler = lg.EventHandler(ctrl=ctrl, dbctrl=dbctrl )
 
-    sleep(6)
+    sleep(2)
 
     
 
@@ -34,25 +33,24 @@ if __name__ == "__main__":
     
     
     
-    # handler.handleEvent(bedroom)
-    # sleep(2)
-    # handler.handleEvent(livingroom)
-    # sleep(2)
-    # handler.handleEvent(kitchen)
-    # sleep(2)
-    # handler.handleEvent(bedroom)
-    # sleep(2)
-    
-    # handler.handleEvent(bathroom)
-    # sleep(2)
-    # handler.handleEvent(guest_room)
-    # sleep(2)
-    # handler.handleEvent(kitchen)
-    # sleep(2)
-    # handler.handleEvent(livingroom)
-    # sleep(2)
-    # handler.handleEvent(bedroom)
-    # sleep(2)
+    handler.handleEvent(bedroom)
+    sleep(4)
+    handler.handleEvent(livingroom)
+    sleep(4)
+    handler.handleEvent(kitchen)
+    sleep(4)
+    #handler.handleEvent(guest_room)
+    #sleep(4)
+    handler.handleEvent(bathroom)
+    sleep(4)
+    #handler.handleEvent(guest_room)
+    #sleep(4)
+    handler.handleEvent(kitchen)
+    sleep(4)
+    handler.handleEvent(livingroom)
+    sleep(4)
+    handler.handleEvent(bedroom)
+    sleep(4)
     
     
     #print("Waiting for events...")

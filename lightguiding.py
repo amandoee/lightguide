@@ -81,13 +81,19 @@ def initRooms():
     living_room.forwardRoom=kitchen
     kitchen.backwardRoom=living_room
     
-    kitchen.forwardRoom=guest_room
-    guest_room.backwardRoom=kitchen
     
-    guest_room.forwardRoom=bathroom
-    bathroom.backwardRoom=guest_room
+    kitchen.forwardRoom=bathroom
+    bathroom.backwardRoom=kitchen
     
     bathroom.forwardRoom=bathroom
+    
+    # kitchen.forwardRoom=guest_room
+    # guest_room.backwardRoom=kitchen
+    
+    # guest_room.forwardRoom=bathroom
+    # bathroom.backwardRoom=guest_room
+    
+    # bathroom.forwardRoom=bathroom
     
     rooms = {roomType.BEDROOM:bedroom, roomType.KITCHEN:kitchen, roomType.BATHROOM:bathroom, roomType.LIVINGROOM:living_room,roomType.GUESTROOM:guest_room}
 
@@ -216,6 +222,8 @@ class EventHandler:
                     #turn of light and update current room
                     self.mqttController.turnOffLight(self.current_room.typeroom.name)
                     self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #move "pointer" to next link
                     next = next.forwardRoom if (dir == "forward") else next.backwardRoom
                     
                     #send log to database controller
@@ -232,10 +240,13 @@ class EventHandler:
                     #turn of light in previous room
                     self.mqttController.turnOffLight(self.current_room.typeroom.name)
 
-                    #Change direction state and update current room
+                    #flip state and update current room
                     self.state=States.BACKWARD if(States.FORWARD) else States.FORWARD
                     self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #move "pointer" to next link
                     pre = pre.backwardRoom if (dir == "forward") else pre.forwardRoom
+                    
                     #log event
                     log = self.createInfoLog(self.current_room.typeroom.name)
                     self.model.queueLog(log=log)
@@ -243,27 +254,27 @@ class EventHandler:
                     #turn on current room and next room
                     self.mqttController.turnOnLight(self.current_room.typeroom.name)
                     self.mqttController.turnOnLight(pre.typeroom.name)
-        else:
-            #Teleport. Guide back to bedroom
-            self.state=States.BACKWARD
+        # else:
+        #     #Teleport. Guide back to bedroom
+        #     self.state=States.BACKWARD
             
                 
-            self.mqttController.turnOffLight(self.current_room.typeroom.name)
+        #     self.mqttController.turnOffLight(self.current_room.typeroom.name)
             
-            print(event.place.typeroom.name)
+        #     print(event.place.typeroom.name)
             
-            #Set new room and turn on that rooms next room (backward room)
-            self.current_room = self.rooms.get(event.place.typeroom)
+        #     #Set new room and turn on that rooms next room (backward room)
+        #     self.current_room = self.rooms.get(event.place.typeroom)
             
-            #Turn off light in old room.
-            for roomkey, roomval in self.rooms.items():
-                if (roomkey!=self.current_room.typeroom and roomkey!=self.current_room.backwardRoom.typeroom):
-                    self.mqttController.turnOffLight(roomval.typeroom.name)
-            self.mqttController.turnOnLight(self.current_room.typeroom.name)
-            self.mqttController.turnOnLight(self.current_room.backwardRoom.typeroom.name)
+        #     #Turn off light in old room.
+        #     for roomkey, roomval in self.rooms.items():
+        #         if (roomkey!=self.current_room.typeroom and roomkey!=self.current_room.backwardRoom.typeroom):
+        #             self.mqttController.turnOffLight(roomval.typeroom.name)
+        #     self.mqttController.turnOnLight(self.current_room.typeroom.name)
+        #     self.mqttController.turnOnLight(self.current_room.backwardRoom.typeroom.name)
             
-            log = self.createInfoLog(self.current_room.typeroom.name)
-            self.model.queueLog(log=log)
+        #     log = self.createInfoLog(self.current_room.typeroom.name)
+        #     self.model.queueLog(log=log)
              
  
     
@@ -282,6 +293,7 @@ class EventHandler:
                 self.state = States.FORWARD
                 self.current_room = self.rooms.get(roomType.BEDROOM)
                 self.mqttController.turnOnLight("BEDROOM")
+                self.mqttController.turnOnLight(self.current_room.forwardRoom.typeroom.name)
                 return
 
         
