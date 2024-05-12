@@ -81,7 +81,7 @@ class DB:
         settings = cursor.fetchall()
         #print(settings)
         #create settings object
-        obj = Settings(start=settings[-1][0], end=settings[-1][1], default_timeout=settings[-1][2], bathroom_timeout=settings[-1][3])
+        obj = Settings(start=settings[-1][0], end=settings[-1][1], default_timeout=settings[-1][4], bathroom_timeout=settings[-1][3], bedroom_timeout=settings[-1][2])
         cursor.close()
 
         return obj

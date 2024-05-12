@@ -21,7 +21,6 @@ class MQTTController:
         return self.queue.pop(0)
     
     def getQueueLength(self):
-        return 0
         return len(self.queue)
 
     def enqueue(self,event : Cep2Zigbee2mqttMessage):
@@ -48,11 +47,14 @@ class MQTTController:
         """ Stop listening for zigbee2mqtt events.
         """
         self.__z2m_client.disconnect()
+    
+    def formatColor(self, color : str):
+        stringtocolor = {"red": {"r":255, "g":0,"b":0}, "green": {"r":0, "g":255,"b":0}, "":{"r":0, "g":0,"b":255} }
+        return stringtocolor[color]
         
-    def turnOnLight(self,lightID : str):
-        
+    def turnOnLight(self,lightID : str, color : str):
         self.__z2m_client.publish_event("","pir")
-        self.__z2m_client.change_state(lightID+"strip","ON")
+        self.__z2m_client.change_state(lightID+"strip","ON", color=self.formatColor(color))
         
     def turnOffLight(self,lightID : str):
         self.__z2m_client.publish_event("","pir")
@@ -87,9 +89,11 @@ class MQTTController:
         # Retrieve the device ID from the topic.
         device_id = tokens[1]
 
+
         #Set event in queue
         #TODO: Figure out how to parse occupancy
-        if not ("strip" in device_id):# and message.event["occupancy"]):
+        if "illuminance" in message.event and message.event["occupancy"]:
+            print("sensor event")
             self.enqueue(message)
         
 

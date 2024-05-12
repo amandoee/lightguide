@@ -14,7 +14,7 @@ class DBController:
 
     def __init__(self):
         self.db = Database.DB(
-            host="192.168.89.97",
+            host="192.168.181.97",
             database="group1lightguide",
             user="sodeChristian",
             password="1234"

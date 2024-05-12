@@ -6,11 +6,12 @@ class Settings:
     default_timeout : int
     bathroom_timeout : int
 
-    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int) -> None:
+    def __init__(self, start:str, end:str, default_timeout:int, bathroom_timeout:int, bedroom_timeout:int) -> None:
         self.start = start
         self.end = end
         self.default_timeout = default_timeout
         self.bathroom_timeout = bathroom_timeout
+        self.bedroom_timeout = bedroom_timeout
 
 
 

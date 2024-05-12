@@ -19,6 +19,7 @@ if __name__ == "__main__":
     ctrl = Cep2Controller.MQTTController()
 
     handler = lg.EventHandler(ctrl=ctrl, dbctrl=dbctrl )
+    handler.TurnOffAllLights()
 
     sleep(2)
 
@@ -33,24 +34,24 @@ if __name__ == "__main__":
     
     
     
-    handler.handleEvent(bedroom)
-    sleep(4)
-    handler.handleEvent(livingroom)
-    sleep(4)
-    handler.handleEvent(kitchen)
-    sleep(4)
+    # handler.handleEvent(bedroom)
+    # sleep(4)
+    # handler.handleEvent(livingroom)
+    # sleep(4)
+    # handler.handleEvent(kitchen)
+    # sleep(4)
     #handler.handleEvent(guest_room)
     #sleep(4)
-    handler.handleEvent(bathroom)
-    sleep(4)
+    # handler.handleEvent(bathroom)
+    # sleep(4)
     #handler.handleEvent(guest_room)
     #sleep(4)
-    handler.handleEvent(kitchen)
-    sleep(4)
-    handler.handleEvent(livingroom)
-    sleep(4)
-    handler.handleEvent(bedroom)
-    sleep(4)
+    # handler.handleEvent(kitchen)
+    # sleep(4)
+    # handler.handleEvent(livingroom)
+    # sleep(4)
+    # handler.handleEvent(bedroom)
+    # sleep(4)
     
     
     #print("Waiting for events...")
