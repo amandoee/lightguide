@@ -205,7 +205,37 @@ class EventHandler:
 
         listenEventThread = threading.Thread(target=self.listenForEvents)
         listenEventThread.start()
-        
+
+
+    def doMovementLogic(self, event:lightEvent, dir): 
+        next = self.current_room.forwardRoom.typeroom if (dir == "forward") else self.current_room.backwardRoom.typeroom
+        pre = self.current_room.backwardRoom.typeroom if (dir == "forward") else self.current_room.forwardRoom.typeroom 
+        if event.type == EventType.MOVEMENT and event.place.typeroom == next:
+                    #turn of light and update current room
+                    self.mqttController.turnOffLight(self.current_room.typeroom.name)
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #send log to database controller
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+                    
+                    #turn on current room and next room
+                    self.mqttController.turnOnLight(self.current_room.typeroom.name)
+                    self.mqttController.turnOnLight(next.name)
+
+        elif(event.type == EventType.MOVEMENT and event.place.typeroom == pre):
+                    self.state=States.BACKWARD if(States.FORWARD) else States.FORWARD
+                    self.current_room = self.rooms.get(event.place.typeroom)
+                    
+                    #log event
+                    log = self.createInfoLog(self.current_room.typeroom.name)
+                    self.model.queueLog(log=log)
+        else:
+            self.current_room = self.rooms.get(event.place.typeroom)        
+            log = self.createInfoLog(self.current_room.typeroom.name)
+            self.model.queueLog(log=log)
+            self.state=States.BACKWARD
+             
     
     def doForwardLogic(self, event:lightEvent):
                 if event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.forwardRoom.typeroom:
