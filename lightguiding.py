@@ -81,18 +81,18 @@ def initRooms():
     kitchen.backwardRoom=living_room
     
     
-    kitchen.forwardRoom=bathroom
-    bathroom.backwardRoom=kitchen
+    #kitchen.forwardRoom=bathroom
+    #bathroom.backwardRoom=kitchen
+    
+    #bathroom.forwardRoom=bathroom
+    
+    kitchen.forwardRoom=guest_room
+    guest_room.backwardRoom=kitchen
+    
+    guest_room.forwardRoom=bathroom
+    bathroom.backwardRoom=guest_room
     
     bathroom.forwardRoom=bathroom
-    
-    # kitchen.forwardRoom=guest_room
-    # guest_room.backwardRoom=kitchen
-    
-    # guest_room.forwardRoom=bathroom
-    # bathroom.backwardRoom=guest_room
-    
-    # bathroom.forwardRoom=bathroom
     
     rooms = {roomType.BEDROOM:bedroom, roomType.KITCHEN:kitchen, roomType.BATHROOM:bathroom, roomType.LIVINGROOM:living_room,roomType.GUESTROOM:guest_room}
 
@@ -167,19 +167,20 @@ class EventHandler:
                 if (self.current_room.typeroom==roomType.BATHROOM):
                     X=SystemSettings.bathroom_timeout*60
                     
-                elif (self.current_room==roomType.BEDROOM):
+                elif (self.current_room.typeroom==roomType.BEDROOM):
                     
-                    X=SystemSettings.bedroom_timeout*60
+                    X=SystemSettings.bedroom_timeout*5
+                    print("from settings:" , SystemSettings.bedroom_timeout)
                 else:
-                    X=SystemSettings.default_timeout*60
+                    X=SystemSettings.default_timeout*5
                     
 
-                if (time.time() > self.lasttimerecorded + X-1 and self.current_room.typeroom == roomType.BEDROOM):
-                    self.state == States.IDLE
+                if (time.time() > self.lasttimerecorded + X and self.current_room.typeroom == roomType.BEDROOM):
+                    self.state = States.IDLE
                     self.TurnOffAllLights()
                     self.timeout=True
                 
-                if (time.time() > self.lasttimerecorded + X):
+                elif (time.time() > self.lasttimerecorded + X and self.current_room.typeroom != roomType.BEDROOM):
                     #Create timeout event
                     print("Timeout")
                     
@@ -196,6 +197,9 @@ class EventHandler:
                     self.Warning()
                     
                     self.timeout=True
+                    
+                time.sleep(1)
+                print(self.timeout)
                     
 
     def listenForEvents(self):
