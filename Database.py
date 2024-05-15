@@ -34,11 +34,14 @@ class DB:
             return
 
         # Try to connect to the database. If the connection fails, then raise an exception.
+        
+        
         self.__mysql_connection = mysql_connect(
                 host=self.__host,
                 database=self.__database,
                 user=self.__user,
-                password=self.__password
+                password=self.__password,
+                connect_timeout=1
             )
         
 
@@ -58,7 +61,7 @@ class DB:
             raise RuntimeError(f"Not connected to database {self.__database}.")
 
         # timestamp - loglevel message
-        query = ("INSERT INTO EVENT (timestamp_,loglevel,type_,measurement,device_id,device_type)"
+        query = ("INSERT INTO event (timestamp_,loglevel,type_,measurement,device_id,device_type)"
                  "VALUES(%s, %s, %s, %s,%s,%s);")
         cursor = self.__mysql_connection.cursor()
 

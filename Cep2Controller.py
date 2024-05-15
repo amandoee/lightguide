@@ -21,6 +21,7 @@ class MQTTController:
         return self.queue.pop(0)
     
     def getQueueLength(self):
+        return 0
         return len(self.queue)
 
     def enqueue(self,event : Cep2Zigbee2mqttMessage):

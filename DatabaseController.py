@@ -14,22 +14,29 @@ class DBController:
 
     def __init__(self):
         self.db = Database.DB(
-            host="192.168.181.97",
-            database="group1lightguide",
-            user="sodeChristian",
+            host="192.168.78.4",
+            database="cep2projectAdminG1",
+            user="Thomas",
             password="1234"
         )
     
     def tryconnect(self):
-        while (not self.db.get_status()):
+        counter : int
+        counter = 5
+        while (not self.db.get_status() and counter >= 0):
+            print("HERE HERE HERE")
+            counter-=1
+
             try:
                 self.db.connect()
                 
+                if counter<=0:
+                    print("Maximum connection attemps (${counter}) to Database has been reached")
+                    return
+                
             except Exception as e:
                 pass
-                #print(e)
-
-            time.sleep(2)
+               
         return
     #connect to db and start posting logs
     def start(self):
@@ -43,14 +50,18 @@ class DBController:
         self.db.disconnect()
 
     def getSettings(self):
-        return self.db.getSettings()
+        
+        if (self.db.get_status()):
+            return self.db.getSettings()
+        else:
+            print("No Connection to Database. Standard Settings applied.")
+            return Settings(bathroom_timeout=300,bedroom_timeout=120,default_timeout=60,start="22:00",end="09:00")
     
     def queueLog(self, log):
         self.logs.append(log)
     
     def postLogs(self):
         while True:
-            print(self.logs)
             if self.logs:
                 if len(self.logs) > 200:
                     raise Exception("buffer is full")

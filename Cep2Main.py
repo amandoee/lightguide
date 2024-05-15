@@ -4,6 +4,7 @@ from Cep2Model import Cep2Model, Cep2ZigbeeDevice
 from DatabaseController import DBController
 import lightguiding as lg
 import Cep2Controller
+
 STARTTIME=datetime.time(22,0,0)
 ENDTIME=datetime.time(6,0,0)
 
@@ -33,25 +34,24 @@ if __name__ == "__main__":
     bathroom = lg.lightEvent(lg.EventType.MOVEMENT,lg.room(lg.roomType.BATHROOM))
     
     
-    
-    # handler.handleEvent(bedroom)
+    handler.handleEvent(bedroom)
+    sleep(4)
+    handler.handleEvent(livingroom)
+    sleep(4)
+    handler.handleEvent(kitchen)
     # sleep(4)
-    # handler.handleEvent(livingroom)
+    # handler.handleEvent(guest_room)
+    sleep(4)
+    handler.handleEvent(bathroom)
     # sleep(4)
-    # handler.handleEvent(kitchen)
-    # sleep(4)
-    #handler.handleEvent(guest_room)
-    #sleep(4)
-    # handler.handleEvent(bathroom)
-    # sleep(4)
-    #handler.handleEvent(guest_room)
-    #sleep(4)
-    # handler.handleEvent(kitchen)
-    # sleep(4)
-    # handler.handleEvent(livingroom)
-    # sleep(4)
-    # handler.handleEvent(bedroom)
-    # sleep(4)
+    # handler.handleEvent(guest_room)
+    sleep(4)
+    handler.handleEvent(kitchen)
+    sleep(4)
+    handler.handleEvent(livingroom)
+    sleep(4)
+    handler.handleEvent(bedroom)
+    sleep(4)
     
     
     #print("Waiting for events...")
@@ -60,8 +60,10 @@ if __name__ == "__main__":
 
     while True:
         pass
-    #    
-    #    if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
-    #        handler.state=lg.States.UNACTIVE
+        
+        # if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
+        #     handler.state=lg.States.UNACTIVE
+        # elif handler.state is lg.States.UNACTIVE:
+        #     handler.state=lg.States.IDLE 
 
     controller.stop()
