@@ -52,13 +52,13 @@ class MQTTController:
         stringtocolor = {"red": {"r":255, "g":0,"b":0}, "green": {"r":0, "g":255,"b":0}, "":{"r":0, "g":0,"b":255} }
         return stringtocolor[color]
         
-    def turnOnLight(self,lightID : str, color : str):
+    def turnOnLight(self,lightID, color : str):
         self.__z2m_client.publish_event("","pir")
-        self.__z2m_client.change_state(lightID+"strip","ON", color=self.formatColor(color))
+        self.__z2m_client.change_state(str(lightID)+"strip","ON", color=self.formatColor(color))
         
-    def turnOffLight(self,lightID : str):
+    def turnOffLight(self,lightID):
         self.__z2m_client.publish_event("","pir")
-        self.__z2m_client.change_state(lightID+"strip","OFF")
+        self.__z2m_client.change_state(str(lightID)+"strip","OFF")
 
 
     def __zigbee2mqtt_event_received(self, message: Cep2Zigbee2mqttMessage) -> None:

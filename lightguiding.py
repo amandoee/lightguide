@@ -38,14 +38,16 @@ def getRoomType(roomstr : str):
 
 
 class room:
-    typeroom: roomType
+    typeRoom: roomType
     forwardRoom: None
     backwardRoom: None
 
     def __init__(self,roomID) -> None:
-        self.typeroom = roomID
+        self.typeRoom = roomID
         self.forwardRoom:room
         self.backwardRoom:room
+    def __str__(self) -> str:
+        return self.typeRoom.name
 
 class EventType(Enum):
     TIMEOUT_EVENT=0
@@ -70,7 +72,8 @@ def initRooms():
     living_room = room(roomType.LIVINGROOM)
     guest_room = room(roomType.GUESTROOM)
     bathroom = room(roomType.BATHROOM)
-
+    
+    
     #Map
     bedroom.backwardRoom=bedroom
     
@@ -103,9 +106,9 @@ class EventHandler:
 
     rooms : dict
     state : States
-    current_room : room
+    currentRoom : room
     timer : int
-    lasttimerecorded : float
+    lastTimeRecorded : float
     model : DBC.DBController
     timeout : bool
     mqttController : MQTTController
@@ -117,25 +120,14 @@ class EventHandler:
 
 
 
-    def createInfoLog(self,room, now : float):
+    def createInfoLog(self,room, now : float, log_type: str = "movement"):
         log = LogEntry(
                         device_id = str(room),
                         loglevel = "Informational",
                         timestamp = datetime.datetime.now(),
                         measurement = str(time.time()-now),
                         device_type="sensor",
-                        type_= "movement"
-                    )
-        return log
-    
-    def createToiletLog(self,room, now : float):
-        log = LogEntry(
-                        device_id = str(room),
-                        loglevel = "Informational",
-                        timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-now),
-                        device_type="sensor",
-                        type_= "ToiletDuration"
+                        type_= log_type
                     )
         return log
 
@@ -164,10 +156,10 @@ class EventHandler:
             
             elif (self.timeout == False):
                 
-                if (self.current_room.typeroom==roomType.BATHROOM):
+                if (self.currentRoom.typeRoom==roomType.BATHROOM):
                     X=SystemSettings.bathroom_timeout*60
                     
-                elif (self.current_room.typeroom==roomType.BEDROOM):
+                elif (self.currentRoom.typeRoom==roomType.BEDROOM):
                     
                     X=SystemSettings.bedroom_timeout*60
                     print("from settings:" , SystemSettings.bedroom_timeout)
@@ -175,20 +167,20 @@ class EventHandler:
                     X=SystemSettings.default_timeout*60
                     
 
-                if (time.time() > self.lasttimerecorded + X and self.current_room.typeroom == roomType.BEDROOM):
+                if (time.time() > self.lastTimeRecorded + X and self.currentRoom.typeRoom == roomType.BEDROOM):
                     self.state = States.IDLE
                     self.TurnOffAllLights()
                     self.timeout=True
                 
-                elif (time.time() > self.lasttimerecorded + X and self.current_room.typeroom != roomType.BEDROOM):
+                elif (time.time() > self.lastTimeRecorded + X and self.currentRoom.typeRoom != roomType.BEDROOM):
                     #Create timeout event
                     print("Timeout")
                     
                     log = LogEntry(
-                        device_id = str(self.current_room.typeroom.name),
+                        device_id = str(self.currentRoom),
                         loglevel = "warning",
                         timestamp = datetime.datetime.now(),
-                        measurement = str(time.time()-self.lasttimerecorded),
+                        measurement = str(time.time()-self.lastTimeRecorded),
                         device_type="sensor",
                         type_= "Timeout"
                     )
@@ -230,24 +222,24 @@ class EventHandler:
         self.state = States.IDLE
         self.rooms = initRooms()
         self.timer = 0
-        self.lasttimerecorded = time.time()
+        self.lastTimeRecorded = time.time()
         #Start timeout thread
         timeoutThread.start()
         self.timeout=False
         self.hasJustVisitedBathroom=False
         
-        self.current_room = self.rooms.get(roomType.BEDROOM)
+        self.currentRoom = self.rooms.get(roomType.BEDROOM)
 
         listenEventThread = threading.Thread(target=self.listenForEvents)
         listenEventThread.start()
 
     def TurnOffAllLights(self):
-        for _, roomval in self.rooms.items():
-            self.mqttController.turnOffLight(roomval.typeroom.name)
+        for _, room_i in self.rooms.items():
+            self.mqttController.turnOffLight(room_i)
     
     def TurnOnAllLights(self, color=""):
-        for _, roomval in self.rooms.items():
-            self.mqttController.turnOnLight(roomval.typeroom.name,color=color)
+        for _, room_i in self.rooms.items():
+            self.mqttController.turnOnLight(room_i,color=color)
             
     def Warning(self):
         colors = ["red","green",""]
@@ -260,66 +252,66 @@ class EventHandler:
         
 
     def doMovementLogic(self, event:lightEvent, dir): 
-        next = self.current_room.forwardRoom if (dir == "forward") else self.current_room.backwardRoom
-        pre = self.current_room.backwardRoom if (dir == "forward") else self.current_room.forwardRoom 
-        if event.type == EventType.MOVEMENT and event.place.typeroom == next.typeroom:
+        nextRoom = self.currentRoom.forwardRoom if (dir == "forward") else self.currentRoom.backwardRoom
+        previousRoom = self.currentRoom.backwardRoom if (dir == "forward") else self.currentRoom.forwardRoom 
+        if event.type == EventType.MOVEMENT and event.place.typeRoom == nextRoom.typeRoom:
                     #turn of light and update current room
-                    self.mqttController.turnOffLight(self.current_room.typeroom.name)
-                    self.current_room = self.rooms.get(event.place.typeroom)
+                    self.mqttController.turnOffLight(self.currentRoom)
+                    self.currentRoom = self.rooms.get(event.place.typeRoom)
                     
                     #move "pointer" to next link
-                    next = next.forwardRoom if (dir == "forward") else next.backwardRoom
+                    nextRoom = nextRoom.forwardRoom if (dir == "forward") else nextRoom.backwardRoom
                     
                     #send log to database controller
-                    log = self.createInfoLog(self.current_room.typeroom.name,self.lasttimerecorded)
+                    log = self.createInfoLog(self.currentRoom,self.lastTimeRecorded)
                     self.model.queueLog(log=log)
                     
                     #turn on current room and next room
-                    self.mqttController.turnOnLight(next.typeroom.name,color="green")
-                    self.mqttController.turnOnLight(lightID=self.current_room.typeroom.name,color="red")
+                    self.mqttController.turnOnLight(nextRoom,color="green")
+                    self.mqttController.turnOnLight(self.currentRoom,color="red")
 
 
-        elif(event.type == EventType.MOVEMENT and event.place.typeroom == pre.typeroom):
+        elif(event.type == EventType.MOVEMENT and event.place.typeRoom == previousRoom.typeRoom):
                     #turn of light in previous room
-                    self.mqttController.turnOffLight(next.typeroom.name)
-                    self.mqttController.turnOffLight(self.current_room.typeroom.name)
+                    self.mqttController.turnOffLight(nextRoom)
+                    self.mqttController.turnOffLight(self.currentRoom)
                     
 
                     #flip state and update current room
                     self.state=States.BACKWARD if(States.FORWARD) else States.FORWARD
-                    self.current_room = self.rooms.get(event.place.typeroom)
+                    self.currentRoom = self.rooms.get(event.place.typeRoom)
                     
                     #move "pointer" to next link
-                    pre = pre.backwardRoom if (dir == "forward") else pre.forwardRoom
+                    previousRoom = previousRoom.backwardRoom if (dir == "forward") else previousRoom.forwardRoom
                     
                     #log event
-                    log = self.createInfoLog(self.current_room.typeroom.name,self.lasttimerecorded)
+                    log = self.createInfoLog(self.currentRoom,self.lastTimeRecorded)
                     self.model.queueLog(log=log)
                     
                     #turn on current room and next room
-                    self.mqttController.turnOnLight(pre.typeroom.name,color="green")
-                    self.mqttController.turnOnLight(self.current_room.typeroom.name,color="red")
+                    self.mqttController.turnOnLight(previousRoom,color="green")
+                    self.mqttController.turnOnLight(self.currentRoom,color="red")
 
         else:
             #Teleport. Guide back to bedroom
             self.state=States.BACKWARD
             
                 
-            self.mqttController.turnOffLight(self.current_room.typeroom.name)
+            self.mqttController.turnOffLight(self.currentRoom)
             
-            print(event.place.typeroom.name)
+            print(event.place)
             
             #Set new room and turn on that rooms next room (backward room)
-            self.current_room = self.rooms.get(event.place.typeroom)
+            self.currentRoom = self.rooms.get(event.place.typeRoom)
             
             #Turn off light in old room.
             for roomkey, roomval in self.rooms.items():
-                if (roomkey!=self.current_room.typeroom and roomkey!=self.current_room.backwardRoom.typeroom):
-                    self.mqttController.turnOffLight(roomval.typeroom.name)
-            self.mqttController.turnOnLight(self.current_room.typeroom.name,color="red")
-            self.mqttController.turnOnLight(self.current_room.backwardRoom.typeroom.name,color="green")
+                if (roomkey!=self.currentRoom.typeRoom and roomkey!=self.currentRoom.backwardRoom.typeRoom):
+                    self.mqttController.turnOffLight(roomval)
+            self.mqttController.turnOnLight(self.currentRoom,color="red")
+            self.mqttController.turnOnLight(self.currentRoom.backwardRoom,color="green")
             
-            log = self.createInfoLog(self.current_room.typeroom.name,self.lasttimerecorded)
+            log = self.createInfoLog(self.currentRoom,self.lastTimeRecorded)
             self.model.queueLog(log=log)
              
  
@@ -330,47 +322,47 @@ class EventHandler:
 
 
         now = time.time()
-        self.lasttimerecorded = now
+        self.lastTimeRecorded = now
         self.timeout=False
         #self.current_room = self.rooms.get(event.place.typeroom)
   
         if (self.state == States.IDLE):
-            if(event.place.typeroom == roomType.BEDROOM):
+            if(event.place.typeRoom == roomType.BEDROOM):
                 self.state = States.FORWARD
-                self.current_room = self.rooms.get(roomType.BEDROOM)
+                self.currentRoom = self.rooms.get(roomType.BEDROOM)
                 self.mqttController.turnOnLight("BEDROOM",color="red")
-                self.mqttController.turnOnLight(self.current_room.forwardRoom.typeroom.name,color="green")
+                self.mqttController.turnOnLight(self.currentRoom.forwardRoom,color="green")
                 
                 #Start tracking timer for when next endpoint is reached
-                self.trackingTimer = time.time()
+                self.trackingTimer = now
                 print("Starting trackingtimer")
                 return
 
         #Detecting from same room, ignore sensor movement
-        if (event.type == EventType.MOVEMENT and event.place.typeroom == self.current_room.typeroom):
+        if (event.type == EventType.MOVEMENT and event.place.typeRoom == self.currentRoom.typeRoom):
                     return
                 
         #If the event is movement, and user just was in bathroom, log the time he was in bathroom:
         if (event.type == EventType.MOVEMENT and self.hasJustVisitedBathroom is True):
-            print("Person was in bathroom for: ", time.time()-self.trackingTimer)
-            self.model.queueLog(log=self.createToiletLog(self.current_room.typeroom.name,self.trackingTimer))
+            print("Person was in bathroom for: ", now-self.trackingTimer)
+            self.model.queueLog(log=self.createInfoLog(self.currentRoom,self.trackingTimer, log_type="ToiletDuration"))
             #Set timer back to 0 to track travel time back to bedroom.
-            self.trackingTimer = time.time()
+            self.trackingTimer = now
             self.hasJustVisitedBathroom=False
 
         if (self.state == States.FORWARD):
             #reached the bathroom
-            if event.place.typeroom == roomType.BATHROOM:
+            if event.place.typeRoom == roomType.BATHROOM:
                 self.state = States.BACKWARD
-                self.current_room=self.rooms.get(roomType.BATHROOM)
-                self.mqttController.turnOnLight(self.current_room.typeroom.name,"red")
-                self.mqttController.turnOnLight(self.current_room.backwardRoom.typeroom.name,"green")
+                self.currentRoom=self.rooms.get(roomType.BATHROOM)
+                self.mqttController.turnOnLight(self.currentRoom,"red")
+                self.mqttController.turnOnLight(self.currentRoom.backwardRoom,"green")
                 
                 #Log time from last endpoint
-                print("Time since last endpoint was reached: ", time.time()-self.trackingTimer)
-                self.model.queueLog(log=self.createInfoLog(self.current_room.typeroom.name,self.trackingTimer))
+                print("Time since last endpoint was reached: ", now-self.trackingTimer)
+                self.model.queueLog(log=self.createInfoLog(self.currentRoom,self.trackingTimer))
                 #Set timer to 0 and flag to true
-                self.trackingTimer=time.time()
+                self.trackingTimer=now
                 self.hasJustVisitedBathroom=True
                 
                 
@@ -382,13 +374,13 @@ class EventHandler:
 
         elif (self.state == States.BACKWARD):
             #check for arrival in bedroom
-            if event.place.typeroom == "BEDROOM":
+            if event.place.typeRoom == "BEDROOM":
             
-                self.current_room=self.rooms.get(roomType.BEDROOM)
-                self.mqttController.turnOffLight(self.current_room.typeroom.name)
+                self.currentRoom=self.rooms.get(roomType.BEDROOM)
+                self.mqttController.turnOffLight(self.currentRoom)
                 
                 #Log the time since last endpoint. Can either be bedroom, if he decided to go back, or bathroom from a 'succesful trip'
-                self.model.queueLog(log=self.createInfoLog(self.current_room.typeroom.name,self.timeoutCounter))
+                self.model.queueLog(log=self.createInfoLog(self.currentRoom,self.timeoutCounter))
                 #LIGE HER
                 
 
