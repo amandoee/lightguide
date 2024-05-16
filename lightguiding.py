@@ -169,10 +169,10 @@ class EventHandler:
                     
                 elif (self.current_room.typeroom==roomType.BEDROOM):
                     
-                    X=SystemSettings.bedroom_timeout*5
+                    X=SystemSettings.bedroom_timeout*60
                     print("from settings:" , SystemSettings.bedroom_timeout)
                 else:
-                    X=SystemSettings.default_timeout*5
+                    X=SystemSettings.default_timeout*60
                     
 
                 if (time.time() > self.lasttimerecorded + X and self.current_room.typeroom == roomType.BEDROOM):
@@ -275,8 +275,9 @@ class EventHandler:
                     self.model.queueLog(log=log)
                     
                     #turn on current room and next room
-                    self.mqttController.turnOnLight(lightID=self.current_room.typeroom.name,color="red")
                     self.mqttController.turnOnLight(next.typeroom.name,color="green")
+                    self.mqttController.turnOnLight(lightID=self.current_room.typeroom.name,color="red")
+
 
         elif(event.type == EventType.MOVEMENT and event.place.typeroom == pre.typeroom):
                     #turn of light in previous room
@@ -296,8 +297,9 @@ class EventHandler:
                     self.model.queueLog(log=log)
                     
                     #turn on current room and next room
-                    self.mqttController.turnOnLight(self.current_room.typeroom.name,color="red")
                     self.mqttController.turnOnLight(pre.typeroom.name,color="green")
+                    self.mqttController.turnOnLight(self.current_room.typeroom.name,color="red")
+
         else:
             #Teleport. Guide back to bedroom
             self.state=States.BACKWARD

@@ -24,15 +24,12 @@ class DBController:
         counter : int
         counter = 5
         while (not self.db.get_status() and counter >= 0):
-            print("HERE HERE HERE")
+            print("Attempting to connect to Database...")
             counter-=1
 
             try:
                 self.db.connect()
-                
-                if counter<=0:
-                    print("Maximum connection attemps (${counter}) to Database has been reached")
-                    return
+            
                 
             except Exception as e:
                 pass
@@ -55,14 +52,15 @@ class DBController:
             return self.db.getSettings()
         else:
             print("No Connection to Database. Standard Settings applied.")
-            return Settings(bathroom_timeout=300,bedroom_timeout=120,default_timeout=60,start="22:00",end="09:00")
+            #Timeout values given in minutes
+            return Settings(bathroom_timeout=2,bedroom_timeout=0.5,default_timeout=1,start="22:00",end="09:00")
     
     def queueLog(self, log):
         self.logs.append(log)
     
     def postLogs(self):
         while True:
-            if self.logs:
+            if self.logs and self.db.get_status():
                 if len(self.logs) > 200:
                     raise Exception("buffer is full")
                 try:
@@ -71,6 +69,8 @@ class DBController:
                     print("posted log")
                 except Exception as e:
                         print(e)
+            else:
+                self.tryconnect()
             
             time.sleep(2)
 
