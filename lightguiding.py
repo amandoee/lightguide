@@ -48,6 +48,9 @@ class room:
         self.backwardRoom:room
     def __str__(self) -> str:
         return self.typeRoom.name
+    
+    def __eq__(self, value: object, /) -> bool:
+        return self.typeRoom == value.typeRoom
 
 class EventType(Enum):
     TIMEOUT_EVENT=0
@@ -254,7 +257,7 @@ class EventHandler:
     def doMovementLogic(self, event:lightEvent, dir): 
         nextRoom = self.currentRoom.forwardRoom if (dir == "forward") else self.currentRoom.backwardRoom
         previousRoom = self.currentRoom.backwardRoom if (dir == "forward") else self.currentRoom.forwardRoom 
-        if event.type == EventType.MOVEMENT and event.place.typeRoom == nextRoom.typeRoom:
+        if event.type == EventType.MOVEMENT and event.place == nextRoom:
                     #turn of light and update current room
                     self.mqttController.turnOffLight(self.currentRoom)
                     self.currentRoom = self.rooms.get(event.place.typeRoom)
@@ -271,7 +274,7 @@ class EventHandler:
                     self.mqttController.turnOnLight(self.currentRoom,color="red")
 
 
-        elif(event.type == EventType.MOVEMENT and event.place.typeRoom == previousRoom.typeRoom):
+        elif(event.type == EventType.MOVEMENT and event.place == previousRoom):
                     #turn of light in previous room
                     self.mqttController.turnOffLight(nextRoom)
                     self.mqttController.turnOffLight(self.currentRoom)
@@ -339,7 +342,7 @@ class EventHandler:
                 return
 
         #Detecting from same room, ignore sensor movement
-        if (event.type == EventType.MOVEMENT and event.place.typeRoom == self.currentRoom.typeRoom):
+        if (event.type == EventType.MOVEMENT and event.place == self.currentRoom):
                     return
                 
         #If the event is movement, and user just was in bathroom, log the time he was in bathroom:
