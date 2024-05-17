@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 from enum import Enum
 import threading
@@ -80,10 +81,14 @@ def initRooms():
     
     with open("roomSetup.txt") as roomList:
         roomString = ""
-        for i in roomList:
-            roomString += i+","
+        for room_i in roomList:
+            if room_i == "bathroom":
+                roomString += room_i
+                break
+            else:
+                roomString += room_i + ","
         
-        roomSetupList = eval("[" + roomString[0:-2] + "]")
+        roomSetupList = eval("[" + roomString + "]")
    
     # Creates a link between all connected rooms to map the path
     for i in range(len(roomSetupList)-1):
