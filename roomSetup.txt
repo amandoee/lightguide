@@ -1,0 +1,5 @@
+bedroom
+living_room
+kitchen
+guest_room
+bathroom

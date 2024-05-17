@@ -49,7 +49,7 @@ class room:
     def __str__(self) -> str:
         return self.typeRoom.name
     
-    def __eq__(self, value: object, /) -> bool:
+    def __eq__(self, value) -> bool:
         return self.typeRoom == value.typeRoom
 
 class EventType(Enum):
@@ -76,30 +76,25 @@ def initRooms():
     guest_room = room(roomType.GUESTROOM)
     bathroom = room(roomType.BATHROOM)
     
+    roomSetupList = [] 
     
-    #Map
-    bedroom.backwardRoom=bedroom
-    
-    bedroom.forwardRoom= living_room
-    living_room.backwardRoom=bedroom
-    
-    living_room.forwardRoom=kitchen
-    kitchen.backwardRoom=living_room
-    
-    
-    #kitchen.forwardRoom=bathroom
-    #bathroom.backwardRoom=kitchen
-    
-    #bathroom.forwardRoom=bathroom
-    
-    kitchen.forwardRoom=guest_room
-    guest_room.backwardRoom=kitchen
-    
-    guest_room.forwardRoom=bathroom
-    bathroom.backwardRoom=guest_room
-    
-    bathroom.forwardRoom=bathroom
-    
+    with open("roomSetup.txt") as roomList:
+        roomString = ""
+        for i in roomList:
+            roomString += i+","
+        
+        roomSetupList = eval("[" + roomString[0:-2] + "]")
+   
+    # Creates a link between all connected rooms to map the path
+    for i in range(len(roomSetupList)-1):
+        roomSetupList[i].backwardRoom = roomSetupList[i-1]
+        roomSetupList[i].forwardRoom = roomSetupList[i+1]
+        if i == 0:
+            roomSetupList[i].backwardRoom = roomSetupList[i]
+
+    roomSetupList[-1].backwardRoom = roomSetupList[-2]
+    roomSetupList[-1].forwardRoom =roomSetupList[-1]
+        
     rooms = {roomType.BEDROOM:bedroom, roomType.KITCHEN:kitchen, roomType.BATHROOM:bathroom, roomType.LIVINGROOM:living_room,roomType.GUESTROOM:guest_room}
 
     return rooms
