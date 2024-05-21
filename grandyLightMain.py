@@ -8,12 +8,6 @@ import grandyLightController
 STARTTIME=datetime.time(22,0,0)
 ENDTIME=datetime.time(6,0,0)
 
-
-# TODAY=datetime.datetime.now()
-
-# STARTTIME=datetime.time(year=TODAY.year,month=TODAY.month,day=TODAY.day,hour=22,minute=0)
-# ENDTIME=datetime.time(year=TODAY.year,month=TODAY.month,day=TODAY,hour=9,minute=0)
-
 if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
     dbctrl = DBController()

@@ -77,7 +77,6 @@ class MQTTController:
 
 
         #Set event in queue
-        #TODO: Figure out how to parse occupancy
         if "illuminance" in message.event and message.event["occupancy"]:
             print("sensor event")
             self.enqueue(message)

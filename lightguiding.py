@@ -326,7 +326,6 @@ class EventHandler:
         now = time.time()
         self.lastTimeRecorded = now
         self.timeout=False
-        #self.current_room = self.rooms.get(event.place.typeroom)
   
         if (self.state == States.IDLE):
             if(event.place.typeRoom == roomType.BEDROOM):
@@ -395,5 +394,14 @@ class EventHandler:
 
 
         else:
-            #TODO report unexpected shit
-            pass
+            log = LogEntry(
+                        device_id = str(self.currentRoom),
+                        loglevel = "error",
+                        timestamp = datetime.datetime.now(),
+                        measurement = str(0),
+                        device_type="none",
+                        type_= "Unexpected event"
+                    )
+                    
+            self.model.queueLog(log=log)
+            self.Warning()
