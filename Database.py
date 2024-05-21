@@ -111,18 +111,6 @@ def main():
                             database="group1lightguide",
                             user="sodeChristian",
                             password="1234")
-    # The controller will connect to a MQTT broker running in the same machine.
-    #controller = Cep2EvemanController(model=model,
-    #                                  mqtt_host="localhost")
-
-    #controller.start_listening()
-    #while not stop_daemon.is_set():
-        # The event times out evey 60 seconds, or when the event is set. If it is set, then the loop
-        # will stop and the application will exit.
-    #    stop_daemon.wait(60)
-
-    #controller.stop_listening()
-
 
     #example usage
     log = LogEntry(

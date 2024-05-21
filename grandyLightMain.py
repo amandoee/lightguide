@@ -1,9 +1,9 @@
 from time import sleep
 import datetime
-from Cep2Model import Cep2Model, Cep2ZigbeeDevice
+from grandyLightModel import grandyLightModel, grandyLightZigbeeDevice
 from DatabaseController import DBController
 import lightguiding as lg
-import Cep2Controller
+import grandyLightController
 
 STARTTIME=datetime.time(22,0,0)
 ENDTIME=datetime.time(6,0,0)
@@ -17,7 +17,7 @@ ENDTIME=datetime.time(6,0,0)
 if __name__ == "__main__":
     # Create a data model and add a list of known Zigbee devices.
     dbctrl = DBController()
-    ctrl = Cep2Controller.MQTTController()
+    ctrl = grandyLightController.MQTTController()
 
     handler = lg.EventHandler(ctrl=ctrl, dbctrl=dbctrl )
     handler.TurnOffAllLights()
@@ -56,14 +56,11 @@ if __name__ == "__main__":
     
     #print("Waiting for events...")
 
-    #TODO: For system time periods activate again
-
     while True:
-        pass
-        
-        # if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
-        #     handler.state=lg.States.UNACTIVE
-        # elif handler.state is lg.States.UNACTIVE:
-        #     handler.state=lg.States.IDLE 
+                
+        if (datetime.datetime.now().hour<STARTTIME.hour and datetime.datetime.now().hour>=ENDTIME.hour):
+             handler.state=lg.States.UNACTIVE
+        elif handler.state is lg.States.UNACTIVE:
+             handler.state=lg.States.IDLE 
 
     controller.stop()

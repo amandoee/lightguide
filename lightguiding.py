@@ -5,7 +5,7 @@ from enum import Enum
 import threading
 import DatabaseController as DBC
 from DBmodels import LogEntry, Settings
-from Cep2Controller import MQTTController
+from grandyLightController import MQTTController
 
 
 

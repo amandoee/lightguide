@@ -9,7 +9,7 @@ from typing import Any, Callable, List, Optional
 import paho.mqtt.client as MqttClient
 from paho.mqtt import publish, subscribe
 
-class Cep2Zigbee2mqttMessageType(Enum):
+class grandyLightZigbee2mqttMessageType(Enum):
     """ Enumeration with the type of messages that zigbee2mqtt publishes.
     """
 
@@ -29,23 +29,12 @@ class Cep2Zigbee2mqttMessageType(Enum):
 
 
 @dataclass
-class Cep2Zigbee2mqttMessage:
+class grandyLightZigbee2mqttMessage:
     """ This class represents a zigbee2mqtt message. The fields vary with the topic, so not all
     attributes might have a value. If the message does not have a field, its value defaults to None.
     """
-
-    # A note about dataclasses: this is a Python feature that allows to simplify the implementation
-    # of a class by only declaring its attributes (or fields) and respective types. In the
-    # background, an initializer is created that receives as arguments the declared attributes. This
-    # can be observed in the parse() method, where instances of Cep2Zigbee2mqttMessage are created
-    # with varying arguments, depending on the topic and message received.
-    # If a field is not declared with a default value, then it is mandatory in the initializer;
-    # otherwise, a value does not need to be given as argument. For this class, the topic and type_
-    # fields do not have a default value, therefore they have to be given as arguments to the
-    # initializer. All other values are optional.
-
     topic: str
-    type_: Cep2Zigbee2mqttMessageType
+    type_: grandyLightZigbee2mqttMessageType
     data: Any = None
     event: Any = None
     message: Any = None
@@ -55,35 +44,15 @@ class Cep2Zigbee2mqttMessage:
     occupancy: str = None
 
     @classmethod
-    def parse(cls, topic: str, message: str) -> Cep2Zigbee2mqttMessage:
-        """ Parse a zigbee2mqtt JSON message, based on the received topic.
-
-        Args:
-            topic (str): message's topic
-            message (str): JSON message that will be parsed
-
-        Returns:
-            Cep2Zigbee2mqttMessage: an object with the parsed message values
-        """
-        # A note about class methods: these methods can be used to instantiate the class where it is
-        # declared. In this case, this method returns an instance of Cep2Zigbee2mqttMessage based on
-        # the topic and message that are given as arguments.
-        # In Python, like other object oriented languages, a method can be an instance method
-        # (called from an object), a static method (called from the class), or a class method
-        # (similar to static methods, but receives the class it instantiates as the first argument).
-        # This is a Python feature that is usually not found in other languages and is an
-        # implementation of the factory design pattern. More information can be found in the
-        # following links:
-        #     - Class methods: https://stackabuse.com/pythons-classmethod-and-staticmethod-explained/
-        #     - Factory design pattern: https://refactoring.guru/design-patterns/factory-method
-
+    def parse(cls, topic: str, message: str) -> grandyLightZigbee2mqttMessage:
+        
         if topic == "zigbee2mqtt/bridge/state":
-            instance = cls(type_=Cep2Zigbee2mqttMessageType.BRIDGE_STATE,
+            instance = cls(type_=grandyLightZigbee2mqttMessageType.BRIDGE_STATE,
                            topic=topic,
                            state=message)
         elif topic in ["zigbee2mqtt/bridge/event", "zigbee2mqtt/bridge/logging"]:
-            type_ = {"zigbee2mqtt/bridge/event": Cep2Zigbee2mqttMessageType.BRIDGE_EVENT,
-                     "zigbee2mqtt/bridge/log": Cep2Zigbee2mqttMessageType.BRIDGE_LOG}.get(topic)
+            type_ = {"zigbee2mqtt/bridge/event": grandyLightZigbee2mqttMessageType.BRIDGE_EVENT,
+                     "zigbee2mqtt/bridge/log": grandyLightZigbee2mqttMessageType.BRIDGE_LOG}.get(topic)
             message_json = json.loads(message)
             instance = cls(type_=type_,
                            topic=topic,
@@ -99,14 +68,14 @@ class Cep2Zigbee2mqttMessage:
                        "zigbee2mqtt/bridge/response/health_check"]:
             instance = None
         else:
-            instance = cls(type_=Cep2Zigbee2mqttMessageType.DEVICE_EVENT,
+            instance = cls(type_=grandyLightZigbee2mqttMessageType.DEVICE_EVENT,
                            topic=topic,
                            event=json.loads(message))
 
         return instance
 
 
-class Cep2Zigbee2mqttClient:
+class grandyLightZigbee2mqttClient:
     """ This class implements a simple zigbee2mqtt client.
 
     By default it subscribes to all events of the default topic (zigbee2mqtt/#). No methods for
@@ -124,7 +93,7 @@ class Cep2Zigbee2mqttClient:
 
     def __init__(self,
                  host: str,
-                 on_message_clbk: Callable[[Optional[Cep2Zigbee2mqttMessage]], None],
+                 on_message_clbk: Callable[[Optional[grandyLightZigbee2mqttMessage]], None],
                  port: int = 1883,
                  topics: List[str] = [ROOT_TOPIC]):
         """ Class initializer where the MQTT broker's host and port can be set, the list of topics
@@ -153,9 +122,6 @@ class Cep2Zigbee2mqttClient:
         self.__topics = topics
 
     def connect(self) -> None:
-        """ Connects to the MQTT broker specified in the initializer. This is a blocking function.
-        """
-        # In the client is already connected then stop here.
         if self.__connected:
             return
 
@@ -176,44 +142,14 @@ class Cep2Zigbee2mqttClient:
         self.__client.publish(topic=f"zigbee2mqtt/{device_id}/set",
                               payload=json.dumps({"state": f"{state}" , "color": color}))
     
-    def publish_event(self, topicPath: str, data: str) -> None:
-        if not self.__connected:
-            raise RuntimeError("The client is not connected. Connect first.")
-        
-
-        json_data = {
-            'device_id': data,
-            'device_type': "test",
-            'measurement': True,
-            'timestamp': "2024-04-05 11:11:29"
-
-        }
-        
-        self.__client.publish(topic=f"cep2/request/store_event",
-                              payload=json.dumps(json_data))
-    
 
 
 
     def check_health(self) -> str:
-        """ Allows to check whether zigbee2mqtt is healthy, i.e. the service is running properly.
-        
-        Refer to zigbee2mqtt for more information. This is a blocking function that waits for a
-        response to the health request.
-
-        Returns:
-            A string with a description of zigbee2mqtt's health. This can be 'ok' or 'fail'. 
-        """
+       
         health_status = "fail"
         health_response_received = Event()
 
-        # This function will run the subscriber on a thread. The subscriber must be started first,
-        # so that the health_check message is received, even if the broker does not have message
-        # persistence active. This should also avoid that messages with QoS 0 are not received.
-        # Also, if the subscriber is started after, it could happen the message to be received by
-        # another subscriber and never by this one.
-        # More information can be found in
-        # https://pagefault.blog/2020/02/05/how-to-set-up-persistent-storage-for-mosquitto-mqtt-broker
         def health_check_subscriber():
             message = subscribe.simple(hostname=self.__host,
                                        port=self.__port,
@@ -310,5 +246,5 @@ class Cep2Zigbee2mqttClient:
                 # inside the try does not throws and exception.
                 # The decode() transforms a byte array into a string, following the utf-8 encoding.
                 if message:
-                    self.__on_message_clbk(Cep2Zigbee2mqttMessage.parse(message.topic,
+                    self.__on_message_clbk(grandyLightZigbee2mqttMessage.parse(message.topic,
                                                                         message.payload.decode("utf-8")))
