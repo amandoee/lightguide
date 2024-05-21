@@ -70,7 +70,6 @@ class lightEvent:
         self.place = place
 
 def initRooms():
-    #hardcoded
     bedroom = room(roomType.BEDROOM)
     kitchen = room(roomType.KITCHEN)
     living_room = room(roomType.LIVINGROOM)
